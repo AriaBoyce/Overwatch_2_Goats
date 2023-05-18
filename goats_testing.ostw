@@ -67,14 +67,15 @@ globalvar define temp_count;
 globalvar define lucio_mode;
 playervar define interact_button;
 playervar define damage_float;
+globalvar define server_stress_time;
 
 rule:"Create Server Load Text"
 Event.OngoingGlobal
 if(HasSpawned(PlayersInSlot(0,Team.Team1)))
 {
 	//DisableInspectorRecording();
-    CreateHudText(AllPlayers(),"{0}".Format([server_load_average]),null,null,Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
-    CreateHudText(AllPlayers(),"{0}".Format([ServerLoad()]),null,null,Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
+    CreateHudText(AllPlayers(),null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
+    CreateHudText(AllPlayers(),null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
 	//lucio_mode = WorkshopSettingToggle("Testing","Reverts Lucio to old speed boost values, breaks other things and might crash", false, 2);
 }
 
@@ -176,32 +177,29 @@ void ana_setup()
 
 void brig_setup()
 {
-		if(IsDummyBot(EventPlayer()) == false)
-		{
-			if( TeamOf(EventPlayer()) == Team.Team1)
-			{
-				team_1_brig = EventPlayer();
-			}
-			else
-			{
-				team_2_brig = EventPlayer();
-			}
-		}
-		SetUltimateAbilityEnabled(EventPlayer(),false);
-		role = 1;
-		effect_scale = 1.0;
-		ult_charge_max = 2550;
-		//ult_charge_max = 255;
-		dam_modify[2] = 100;
-		healing_recieved = 2;
-		sum_array_damage(EventPlayer());
-		SetDamageReceived(EventPlayer(),damage_taken);
-		SetHealingReceived(EventPlayer(), 200);
-		SetHealingDealt(EventPlayer(),1);
-		SetMaxHealth(EventPlayer(),200);
-		AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,100,true,true);
-		DestroyHudText(brig_hud_ref);
-		brig_hud_ref = CreateHudText(EventPlayer(),null,null,"{0}".Format([EventPlayer().ult_charge/EventPlayer().ult_charge_max*100]),Location.Right,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
+	SetUltimateAbilityEnabled(EventPlayer(),false);
+	if( TeamOf(EventPlayer()) == Team.Team1)
+	{
+		team_1_brig = EventPlayer();
+	}
+	else
+	{
+		team_2_brig = EventPlayer();
+	}
+	role = 1;
+	effect_scale = 1.0;
+	ult_charge_max = 2550;
+	//ult_charge_max = 255;
+	//dam_modify[2] = 100;
+	healing_recieved = 1;
+	//sum_array_damage(EventPlayer());
+	//SetDamageReceived(EventPlayer(),damage_taken);
+	SetHealingReceived(EventPlayer(), 100);
+	SetHealingDealt(EventPlayer(),1);
+	SetMaxHealth(EventPlayer(),50);
+	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
+	DestroyHudText(brig_hud_ref);
+	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"{0}".Format([EventPlayer().ult_charge/EventPlayer().ult_charge_max*100]),Location.Right,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
 void dva_setup()
@@ -213,8 +211,6 @@ void dva_setup()
 	}
 	ult_charge_max = 1540;
 	dva_ult_check = 0;
-	armor_reference = AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 170, true, true);
-	health_reference = AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 365, true, true);
 }
 
 void lucio_setup()
@@ -238,9 +234,7 @@ void rein_setup()
 	role = 0;
 	ult_charge_max = 1540;
 	dam_modify[1] = 100;
-	SetMaxHealth(EventPlayer(),129.10);
-	AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,148.15,true,true);
-	AddHealthPoolToPlayer(EventPlayer(),HealthType.Armor,77.25,true,true);
+	SetMaxHealth(EventPlayer(),(2000/1200) * 100);
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
 	SetHealingReceived(EventPlayer(),200);
@@ -298,6 +292,29 @@ void zen_setup()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //General
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+rule: "Anti Crash"
+Event.OngoingGlobal
+{
+	if(ServerLoad() > 240)
+	{
+		server_stress_time += 1;
+	}
+	else
+	{
+		server_stress_time = 0;
+	}
+	if(server_stress_time > 15)
+	{
+		SetSlowMotion(10);
+	}
+	if(server_stress_time == 0)
+	{
+		SetSlowMotion(100);
+	}
+	Wait(1/5);
+	Loop();
+}
+
 rule:"Has Spawned Setup"
 Event.OngoingPlayer
 if(HasSpawned())
@@ -341,6 +358,7 @@ rule:"Ult Charge"
 Event.OngoingPlayer
 if(IsUsingUltimate(EventPlayer()) == false)
 if(IsGameInProgress())
+if(!IsBetweenRounds())
 {
 	if(ult_charge >= ult_charge_max)
 	{
@@ -367,6 +385,7 @@ if(IsGameInProgress())
 rule:"Ult Charge Raise from Damage"
 Event.OnDamageDealt
 if(IsUsingUltimate(EventPlayer()) == false)
+if(Victim() != Attacker())
 {
 	ult_charge += EventDamage()/(Victim().damage_float);
 }
@@ -374,13 +393,21 @@ if(IsUsingUltimate(EventPlayer()) == false)
 rule:"Ult Charge Raise from Healing"
 Event.OnHealingDealt
 if(IsUsingUltimate(EventPlayer()) == false)
+if(!IsBetweenRounds())
 {
 	ult_charge += EventHealing()/(Healee().healing_recieved);
 }
 
 rule: "Reset Ult Charge"
 Event.OngoingPlayer
-if(IsUsingUltimate(EventPlayer()) == true)
+if(UltimateChargePercent() >= 100 && IsButtonHeld(EventPlayer(),Button.Ultimate))
+{
+	ult_charge = 0;
+}
+
+rule: "Reset on Round End"
+Event.OngoingPlayer
+if(IsBetweenRounds() == true)
 {
 	ult_charge = 0;
 }
@@ -399,22 +426,9 @@ if(is_asleep == false)
 	LoopIfConditionIsTrue();
 }
 
-//server load average code
-rule:"Server Load Average"
-Event.OngoingGlobal
-{
-	server_load_average *= server_load_count;
-	server_load_average += ServerLoad();
-	server_load_count += 1;
-	server_load_average /= server_load_count;
-	Wait(1);
-	Loop();
-}
-
 rule:"Comp Check Tank"
 Event.OngoingPlayer
 if(HeroOf(EventPlayer()) == Hero.Reinhardt || HeroOf(EventPlayer()) == Hero.Winston)
-
 {
 	define temp_team_hero = AllPlayers(TeamOf(EventPlayer()));
 	for(temp_count = 0; temp_count < 6; temp_count++)
@@ -590,8 +604,12 @@ Event.OnDamageDealt
 Player.Brigitte
 if(IsFiringSecondary())
 {
+	if(brig_shield_range > 2)
+	{
+		SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
+	}
 	//if she damages with shield, give stun effect
-	SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
+	
 }
 
 rule:"Brig: Ult Armor Gen"
@@ -613,32 +631,62 @@ if(brig_ult == true)
 	LoopIfConditionIsTrue();
 }
 
-rule:"Brig: Repair Pack"
+rule: "Brig: Repair Pack Default"
 Event.OnHealingDealt
 Player.Brigitte
-if(EventAbility() == Button.Ability2)
+if (EventAbility() == Button.Ability2)
+if (HeroOf(Healee()) != Hero.Lucio)
 {
-	//old brig repair pack, heal up to 150, extra up to 75 turned into armor
-	define temp_health = MaxHealth(Healee())-Health(Healee());
+	define temp_health = MaxHealth(Healee()) - Health(Healee());
 	define heal_amount = 150;
-    heal_amount -= temp_health;
-	if(temp_health > 150)
+	heal_amount -= temp_health;
+	if (temp_health > 150)
 	{
-		Heal(Healee(),Healer(),150);
+		Heal(Healee(), Healer(), 150);
 	}
 	else
 	{
-		Heal(Healee(),Healer(),temp_health);
+		Heal(Healee(), Healer(), temp_health);
 	}
-    if(heal_amount > 75)
-    {
-        heal_amount = 75;
-    }
-	temp_health = AddHealthPoolToPlayer(Healee(),HealthType.Armor,heal_amount,false,true);
-	SetAbility2Enabled(EventPlayer(),false);
-	Wait(6);
+	if (heal_amount > 75)
+	{
+		heal_amount = 75;
+	}
+	AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
+	temp_health = LastCreatedHealthPool();
+	SetAbility2Enabled(EventPlayer(), false);
+	Wait(6, WaitBehavior.IgnoreCondition);
 	RemoveHealthPoolFromPlayer(temp_health);
-	SetAbility2Enabled(EventPlayer(),true);
+	SetAbility2Enabled(EventPlayer(), true);
+}
+
+rule: "Brig: Repair Pack Lucio"
+Event.OnHealingDealt
+Player.Brigitte
+if (EventAbility() == Button.Ability2)
+if (HeroOf(Healee()) == Hero.Lucio)
+{
+	define temp_health = MaxHealth(Healee()) - Health(Healee());
+	define heal_amount = 150;
+	heal_amount -= temp_health;
+	if (temp_health > 150)
+	{
+		Heal(Healee(), Healer(), 150 / Healee().healing_recieved);
+	}
+	else
+	{
+		Heal(Healee(), Healer(), temp_health / Healee().healing_recieved);
+	}
+	if (heal_amount > 75)
+	{
+		heal_amount = 75;
+	}
+	AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount * healing_recieved, false, true);
+	temp_health = LastCreatedHealthPool();
+	SetAbility2Enabled(EventPlayer(), false);
+	Wait(6, WaitBehavior.IgnoreCondition);
+	RemoveHealthPoolFromPlayer(temp_health);
+	SetAbility2Enabled(EventPlayer(), true);
 }
 
 rule: "Brig: Check Shield Bash Distance"
@@ -735,9 +783,8 @@ if(EventAbility() != null)
 	Heal(Healee(),Healer(),EventHealing()*100);
 }
 
-rule: "Brig: Reset on Round End"
+rule: "Reset on Round End"
 Event.OngoingPlayer
-Player.Brigitte
 if(IsBetweenRounds() == true)
 {
 	ult_charge = 0;
@@ -806,63 +853,63 @@ if(IsInAlternateForm() == true)
 }
 
 
-rule: "Dva: Used Nuke"
+rule: "Dva: Melee Cancels Boosters"
 Event.OngoingPlayer
 Player.Dva
-if(IsUsingUltimate(EventPlayer()))
-if(dva_ult_check == 0)
+if (IsUsingAbility1(EventPlayer()) == true)
+if (IsButtonHeld(EventPlayer(), Button.Melee) == true)
 {
-	RemoveAllHealthPoolsFromPlayer(EventPlayer());
-	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,135,true,true);
-	Wait(3.0);
-	dva_ult_check = 1;
-	ult_charge = ult_charge_max;
-	stored_ult_charge = 0;
+	PressButton(EventPlayer(), Button.Ability1);
 }
 
-rule: "Dva: Used Remech"
+rule: "Dva: Baby Health"
 Event.OngoingPlayer
 Player.Dva
-if(IsUsingUltimate(EventPlayer()))
-if(dva_ult_check == 1)
+if (IsInAlternateForm(EventPlayer()) == true)
 {
-	Wait(0.91);
+	RemoveHealthPoolFromPlayer(armor_reference);
+	RemoveHealthPoolFromPlayer(health_reference);
+	ult_charge_max = 315;
+	if (IsUsingUltimate(EventPlayer()))
+	{
+		stored_ult_charge = 0;
+		ult_charge = ult_charge_max;
+	}
+	else
+	{
+		stored_ult_charge = ult_charge;
+		ult_charge = 0;
+	}
+	define temp_health = 151 - HealthOfType(EventPlayer(), HealthType.Health);
+	Heal(EventPlayer(), null, temp_health);
+	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 50, true, true);
+}
+
+rule: "Dva: Mech Health"
+Event.OngoingPlayer
+Player.Dva
+if (!IsInAlternateForm(EventPlayer()) == true)
+{
 	RemoveAllHealthPoolsFromPlayer(EventPlayer());
-	Wait(1/60);
-	armor_reference = AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 170, true, true);
-	health_reference = AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 365, true, true);
-	Heal(EventPlayer(),null,1000);
-	Wait(1.0);
-	Heal(EventPlayer(),null,65);
-	dva_ult_check = 0;
-	ult_charge = stored_ult_charge;
+	Wait(0.033, WaitBehavior.IgnoreCondition);
+	SetMaxHealth(EventPlayer(), 66);
+	Wait(0.033, WaitBehavior.IgnoreCondition);
 	ult_charge_max = 1540;
+	ult_charge = stored_ult_charge;
+	Wait(0.033, WaitBehavior.IgnoreCondition);
+	Heal(EventPlayer(), null, 1000);
+	define temp_health = 400 - HealthOfType(EventPlayer(), HealthType.Health);
+	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health, true, true);
+	health_reference = LastCreatedHealthPool();
+	SetUltimateCharge(EventPlayer(), ult_charge / ult_charge_max);
+	if (MaxHealthOfType(EventPlayer(), HealthType.Armor) < 200)
+	{
+		define temp_armor = 200 - HealthOfType(EventPlayer(), HealthType.Armor);
+		AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, temp_armor, true, true);
+		armor_reference = LastCreatedHealthPool();
+	}
 }
 
-rule: "Dva: Check for demech"
-Event.OngoingPlayer
-Player.Dva
-if(MaxHealth(EventPlayer()) > 590)
-if(Health(EventPlayer()) < 1)
-{
-	RemoveAllHealthPoolsFromPlayer(EventPlayer());
-	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,135,true,true);
-	Wait(3.5);
-	dva_ult_check = 1;
-	stored_ult_charge = ult_charge;
-	ult_charge_max = 270;
-	ult_charge = 0;
-}
-
-rule: "Dva: Reset on Death"
-Event.OnDeath
-Player.Dva
-{
-	dva_ult_check = 0;
-	RemoveAllHealthPoolsFromPlayer(EventPlayer());
-	armor_reference = AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 170, true, true);
-	health_reference = AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 365, true, true);
-}
 
 rule: "Dva: Melee Cancels Boosters"
 Event.OngoingPlayer
