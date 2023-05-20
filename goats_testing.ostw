@@ -68,6 +68,7 @@ globalvar define lucio_mode;
 playervar define interact_button;
 playervar define damage_float;
 globalvar define server_stress_time;
+playervar define brig_enemy_range;
 
 rule:"Create Server Load Text"
 Event.OngoingGlobal
@@ -268,8 +269,11 @@ void zarya_setup()
 	effect_scale = 1.0;
 	max_shield_health = 200;
 	ult_charge_max = 2100;
+	//ult_charge_max = 100;
 	current_shield_health = 200;
 	role = 0;
+	healing_recieved = 2;
+	SetHealingReceived(EventPlayer(),200);
 	//SetMaxHealth(EventPlayer(),50);
 	AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,150,true,true);
 	AddHealthPoolToPlayer(EventPlayer(),HealthType.Shields,175,true,true);
@@ -323,6 +327,7 @@ if(HasSpawned())
     default_setup(); 
 }
 
+/*
 rule: "Create bot"
 Event.OngoingPlayer
 if(IsButtonHeld(EventPlayer(),Button.Interact))
@@ -331,9 +336,13 @@ if(IsButtonHeld(EventPlayer(),Button.Interact))
     DestroyAllDummyBots();
 	Wait(1/60);
 	//Damage(EventPlayer(),null,100);
-    CreateDummyBot(Hero.Reinhardt,Team.Team1,1,EventPlayer(),FacingDirectionOf(EventPlayer()));
+    define dummy_bot = CreateDummyBot(Hero.Brigitte,Team.Team2,1,EventPlayer(),FacingDirectionOf(EventPlayer()));
+	CreateInWorldText(AllPlayers(),"{0}".Format([Health(dummy_bot)]),PositionOf(dummy_bot),1,Clipping.DoNotClip,InworldTextRev.String,Color.White,Spectators.VisibleNever);
+	Wait(1);
+	dummy_bot.ult_charge = 1000;
+	StartHoldingButton(dummy_bot,Button.Ultimate);
 }
-
+*/
 
 rule:"Increased Knockback"
 Event.OngoingPlayer
@@ -403,6 +412,7 @@ Event.OngoingPlayer
 if(UltimateChargePercent() >= 100 && IsButtonHeld(EventPlayer(),Button.Ultimate))
 {
 	ult_charge = 0;
+	SetUltimateCharge(EventPlayer(),100);
 }
 
 rule: "Reset on Round End"
@@ -581,6 +591,7 @@ Player.Brigitte
 if(IsButtonHeld(EventPlayer(),Button.Ultimate))
 if(ult_charge >= ult_charge_max-1)
 {
+	BigMessage(AllPlayers(OppositeTeamOf(TeamOf(EventPlayer()))),"RAID BOSS INCOMING");
 	PlayEffect(AllPlayers(),PlayEffect.BuffExplosionSound,Color.White,EventPlayer(),100);
 	//raise brigs speed during ult
 	move_modify[2] = 30;
@@ -590,7 +601,6 @@ if(ult_charge >= ult_charge_max-1)
 	ult_charge = 0;
 	brig_ult = true;
 	brig_ult_ref = CreateEffect(AllPlayers(),Effect.Ring,Color.Yellow,PositionOf(EventPlayer()),8.5);
-	
 	Wait(10);
 	brig_ult = false;
 	DestroyEffect(brig_ult_ref);
@@ -599,18 +609,7 @@ if(ult_charge >= ult_charge_max-1)
 	SetMoveSpeed(EventPlayer(),move_var);
 }
 
-rule:"Brig: Shield Bash Stun"
-Event.OnDamageDealt
-Player.Brigitte
-if(IsFiringSecondary())
-{
-	if(brig_shield_range > 2)
-	{
-		SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
-	}
-	//if she damages with shield, give stun effect
-	
-}
+
 
 rule:"Brig: Ult Armor Gen"
 Event.OngoingPlayer
@@ -620,13 +619,25 @@ if(brig_ult == true)
 	//manually give players the armor from rally
 	time_since_damage = PlayersWithinRadius(PositionOf(EventPlayer()),10,TeamOf(EventPlayer()),RadiusLOS.SurfacesAndEnemyBarriers);
 	ult_charge = 0;
-	time_since_damage.brig_ult_armor_amount += 15*time_since_damage.damage_float;
-	if(time_since_damage.brig_ult_armor_amount > 150*time_since_damage.damage_float)
+	for(define i = 0; i < 6; i++)
 	{
-		time_since_damage.brig_ult_armor_amount = 150*time_since_damage.damage_float;
+		time_since_damage[i].brig_ult_armor_amount += 15*time_since_damage[i].healing_recieved;
+		if(time_since_damage[i].brig_ult_armor_amount > 150*time_since_damage[i].healing_recieved)
+		{
+			time_since_damage[i].brig_ult_armor_amount = 150*time_since_damage[i].healing_recieved;
+		}
+		RemoveHealthPoolFromPlayer(time_since_damage[i].brig_ult_armor_ref);
+		time_since_damage[i].brig_ult_armor_ref = AddHealthPoolToPlayer(time_since_damage[i],HealthType.Armor,time_since_damage[i].brig_ult_armor_amount,false,true);	
+	}
+	/*
+	time_since_damage.brig_ult_armor_amount += 15*time_since_damage.healing_recieved;
+	if(time_since_damage.brig_ult_armor_amount > 150*time_since_damage.healing_recieved)
+	{
+		time_since_damage.brig_ult_armor_amount = 150*time_since_damage.healing_recieved;
 	}
 	RemoveHealthPoolFromPlayer(time_since_damage.brig_ult_armor_ref);
-	time_since_damage.brig_ult_armor_ref = AddHealthPoolToPlayer(EventPlayer(),HealthType.Armor,brig_ult_armor_amount,false,true);
+	time_since_damage.brig_ult_armor_ref = AddHealthPoolToPlayer(time_since_damage,HealthType.Armor,time_since_damage.brig_ult_armor_amount,false,true);
+	*/
 	Wait(0.5);
 	LoopIfConditionIsTrue();
 }
@@ -639,7 +650,7 @@ if (HeroOf(Healee()) != Hero.Lucio)
 {
 	define temp_health = MaxHealth(Healee()) - Health(Healee());
 	define heal_amount = 150;
-	heal_amount -= temp_health;
+	heal_amount -= temp_health/Healee().healing_recieved;
 	if (temp_health > 150)
 	{
 		Heal(Healee(), Healer(), 150);
@@ -652,8 +663,11 @@ if (HeroOf(Healee()) != Hero.Lucio)
 	{
 		heal_amount = 75;
 	}
-	AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
-	temp_health = LastCreatedHealthPool();
+	if(heal_amount < 1)
+	{
+		heal_amount = 0;
+	}
+	temp_health = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount*Healee().healing_recieved, false, true);
 	SetAbility2Enabled(EventPlayer(), false);
 	Wait(6, WaitBehavior.IgnoreCondition);
 	RemoveHealthPoolFromPlayer(temp_health);
@@ -671,17 +685,17 @@ if (HeroOf(Healee()) == Hero.Lucio)
 	heal_amount -= temp_health;
 	if (temp_health > 150)
 	{
-		Heal(Healee(), Healer(), 150 / Healee().healing_recieved);
+		Heal(Healee(), Healer(), 234);
 	}
 	else
 	{
-		Heal(Healee(), Healer(), temp_health / Healee().healing_recieved);
+		Heal(Healee(), Healer(), temp_health / 0.64);
 	}
 	if (heal_amount > 75)
 	{
 		heal_amount = 75;
 	}
-	AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount * healing_recieved, false, true);
+	AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
 	temp_health = LastCreatedHealthPool();
 	SetAbility2Enabled(EventPlayer(), false);
 	Wait(6, WaitBehavior.IgnoreCondition);
@@ -689,16 +703,17 @@ if (HeroOf(Healee()) == Hero.Lucio)
 	SetAbility2Enabled(EventPlayer(), true);
 }
 
-rule: "Brig: Check Shield Bash Distance"
+
+rule: "Brig: Check Shield Bash Range"
 Event.OngoingPlayer
 Player.Brigitte
-if(IsFiringSecondary())
+if(IsFiringSecondary(EventPlayer()))
+if(!IsFiringPrimary(EventPlayer()))
 {
-	//intensive function, get distance from brigs shield to enemy shield
 	define temp_range = 5;
 	if(!IsInLineOfSight(EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer()),EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer())*Vector(temp_range,0,temp_range),BarrierLOS.EnemyBarriersBlock))
 	{
-		for(temp_count = 1; temp_count < 10; temp_count++)
+		for(temp_count = 1; temp_count < 12; temp_count++)
 		{
 			if(IsInLineOfSight(EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer()),EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer())*Vector(temp_range,0,temp_range),BarrierLOS.EnemyBarriersBlock))
 			{
@@ -711,32 +726,59 @@ if(IsFiringSecondary())
 		}
 	}
 	brig_shield_range = temp_range;
+	brig_enemy_range = DistanceBetween(EventPlayer(),ClosestPlayerTo(PositionOf(EventPlayer()),OppositeTeamOf(TeamOf(EventPlayer()))));
 	Wait(1/4);
-	Loop();
+	LoopIfConditionIsTrue();
 }
-
 rule: "Brig: Used Shield Bash"
 Event.OngoingPlayer
 Player.Brigitte
 if(IsFiringSecondary(EventPlayer()))
 if(IsFiringPrimary(EventPlayer()))
 {
-	//if brig is too close to enemy shield do nothing
-	if(brig_shield_range < 2.35 && brig_shield_range <= 0.88 && brig_shield_range >= 0.89)
+	SetMoveSpeed(EventPlayer(),40);
+	define temp_range = 5;
+	if(!IsInLineOfSight(EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer()),EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer())*Vector(temp_range,0,temp_range),BarrierLOS.EnemyBarriersBlock))
+	{
+		for(temp_count = 1; temp_count < 12; temp_count++)
+		{
+			if(IsInLineOfSight(EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer()),EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer())*Vector(temp_range,0,temp_range),BarrierLOS.EnemyBarriersBlock))
+			{
+				temp_range += (5/2)/temp_count;
+			}
+			else
+			{
+				temp_range -= (5/2)/temp_count;
+			}
+		}
+	}
+	brig_shield_range = temp_range;
+	brig_enemy_range = DistanceBetween(EventPlayer(),ClosestPlayerTo(PositionOf(EventPlayer()),OppositeTeamOf(TeamOf(EventPlayer()))));
+	if(brig_shield_range < 2.25)
 	{
 		SetStatus(EventPlayer(),null,Status.Stunned,0.01);
 	}
-	else//slow her down to shorten travel distance
-	{
-		move_modify[0] = -40;
-		sum_array_speed(EventPlayer());
-		SetMoveSpeed(EventPlayer(),move_var);
-	}
-	Wait(1/30);
+	Wait(1/60);
 	LoopIfConditionIsTrue();
-	move_modify[0] = 0;
-	sum_array_speed(EventPlayer());
-	SetMoveSpeed(EventPlayer(),move_var);
+	SetMoveSpeed(EventPlayer(),100);
+}
+
+rule:"Brig: Shield Bash Stun"
+Event.OnDamageDealt
+Player.Brigitte
+if(IsFiringSecondary())
+if(EventAbility() == Button.PrimaryFire)
+{
+	//if she damages with shield, give stun effect
+	if(brig_shield_range > brig_enemy_range)
+	{
+		SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
+	}
+	else
+	{
+		Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
+	}
+
 }
 
 rule:"Brig: Reduce Armor From Damage"
@@ -745,7 +787,6 @@ if(brig_ult_armor_amount > 0)
 {
 	//ignore lucio beat and shield health, leaving armor
 	define temp_damage = EventDamage();
-	temp_damage -= lucio_beat;
 	temp_damage -= HealthOfType(EventPlayer(),HealthType.Shields);
 	brig_ult_armor_amount -= temp_damage;
 	if(brig_ult_armor_amount < 0)
