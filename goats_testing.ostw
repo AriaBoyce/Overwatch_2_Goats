@@ -69,6 +69,8 @@ playervar define interact_button;
 playervar define damage_float;
 globalvar define server_stress_time;
 playervar define brig_enemy_range;
+playervar define zarya_shield_cooldown_1;
+playervar define zarya_shield_cooldown_2;
 
 rule:"Create Server Load Text"
 Event.OngoingGlobal
@@ -200,7 +202,7 @@ void brig_setup()
 	SetMaxHealth(EventPlayer(),50);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
 	DestroyHudText(brig_hud_ref);
-	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"{0}".Format([EventPlayer().ult_charge/EventPlayer().ult_charge_max*100]),Location.Right,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
+	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}".Format([RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Top,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
 void dva_setup()
@@ -271,6 +273,8 @@ void zarya_setup()
 	ult_charge_max = 2100;
 	//ult_charge_max = 100;
 	current_shield_health = 200;
+	zarya_shield_cooldown_1 = 0;
+	zarya_shield_cooldown_2 = 0;
 	role = 0;
 	healing_recieved = 2;
 	SetHealingReceived(EventPlayer(),200);
@@ -280,12 +284,14 @@ void zarya_setup()
 	dam_modify[1] = 100;
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
+	CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}             {1}                                                               ".Format([RoundToInteger(zarya_shield_cooldown_1),RoundToInteger(zarya_shield_cooldown_2)]),Location.Right,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
 void zen_setup()
 {
 	effect_scale = 0.5;
 	ult_charge_max = 2310;
+	//ult_charge_max = 10;
 	damage_var = (46/48)*100;
 	max_shield_health = 150;
 	current_shield_health = 150;
@@ -362,6 +368,7 @@ if(HeroOf(EventPlayer()) != Hero.Soldier76)
 	default_setup();
 }
 
+
 //manually track ult charge to ignore tank passive of giving less ult charge
 rule:"Ult Charge"
 Event.OngoingPlayer
@@ -412,11 +419,13 @@ Event.OngoingPlayer
 if(UltimateChargePercent() >= 100 && IsButtonHeld(EventPlayer(),Button.Ultimate))
 {
 	ult_charge = 0;
-	SetUltimateCharge(EventPlayer(),100);
+	SetUltimateCharge(EventPlayer(),0);
 }
+
 
 rule: "Reset on Round End"
 Event.OngoingPlayer
+Player.Brigitte
 if(IsBetweenRounds() == true)
 {
 	ult_charge = 0;
@@ -473,6 +482,8 @@ if(IsInSpawnRoom(EventPlayer()))
 	interact_button += 0.5;
 	if(interact_button > 3)
 	{
+		SetAbility1Enabled(EventPlayer(),true);
+		SetAbility2Enabled(EventPlayer(),true);
 		if(HeroOf(EventPlayer()) == Hero.Dva && IsInAlternateForm(EventPlayer()) == true)
 		{
 			//do hero swap stuff
@@ -1275,6 +1286,8 @@ Player.Zarya
 if(IsUsingAbility1(EventPlayer()))
 {
 	SetAbility1Enabled(EventPlayer(),false);
+	zarya_shield_cooldown_1 = 10;
+	ChaseVariableOverTime(zarya_shield_cooldown_1,0,10,TimeChaseReevaluation.DestinationAndDuration);
 	Wait(10);
 	SetAbility1Enabled(EventPlayer(),true);
 }
@@ -1285,6 +1298,8 @@ Player.Zarya
 if(IsUsingAbility2(EventPlayer()))
 {
 	SetAbility2Enabled(EventPlayer(),false);
+	zarya_shield_cooldown_2 = 10;
+	ChaseVariableOverTime(zarya_shield_cooldown_2,0,10,TimeChaseReevaluation.DestinationAndDuration);
 	Wait(10);
 	SetAbility2Enabled(EventPlayer(),true);
 }
