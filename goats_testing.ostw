@@ -1,3 +1,4 @@
+//0M6MN
 globalvar define server_load_average;
 globalvar define server_load_count;
 globalvar define debug_mode;
@@ -71,14 +72,14 @@ globalvar define server_stress_time;
 playervar define brig_enemy_range;
 playervar define zarya_shield_cooldown_1;
 playervar define zarya_shield_cooldown_2;
+playervar define healing_dealt;
 
 rule:"Create Server Load Text"
 Event.OngoingGlobal
-if(HasSpawned(PlayersInSlot(0,Team.Team1)))
 {
-	//DisableInspectorRecording();
-    CreateHudText(AllPlayers(),null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
-    CreateHudText(AllPlayers(),null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
+	DisableInspectorRecording();
+    //CreateHudText(null,null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
+    //CreateHudText(null,null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
 	//lucio_mode = WorkshopSettingToggle("Testing","Reverts Lucio to old speed boost values, breaks other things and might crash", false, 2);
 }
 
@@ -107,6 +108,10 @@ Number sum_array_speed(Player temp_player)
 }
 void default_setup()
 {
+	SetAbility1Enabled(EventPlayer(),true);
+	SetAbility2Enabled(EventPlayer(),true);
+	SetUltimateCharge(EventPlayer(),0);
+	healing_dealt = 100;
 	hero_list = [Hero.Dva, Hero.Reinhardt, Hero.Winston, Hero.Zarya, Hero.Ana, Hero.Brigitte, Hero.Lucio, Hero.Moira, Hero.Zenyatta];
 	RemoveAllHealthPoolsFromPlayer(EventPlayer());
 	move_modify[0] = 0;// (0,Dva Primary Fire) (1,Lucio Speed) (2, brig ult)
@@ -249,6 +254,7 @@ void moira_setup()
 	role = 1;
 	moira_resource = 100;
 	ult_charge_max = 2390;
+	healing_dealt = 115;
 	SetHealingDealt(EventPlayer(),115);
 }
 
@@ -313,8 +319,9 @@ Event.OngoingGlobal
 	{
 		server_stress_time = 0;
 	}
-	if(server_stress_time > 15)
+	if(server_stress_time == 15)
 	{
+		SmallMessage(AllPlayers(),"Anti Crash Slow Mode");
 		SetSlowMotion(10);
 	}
 	if(server_stress_time == 0)
@@ -356,7 +363,7 @@ if(booped == 1)
 {
 	//when a tank recieves a knockback effect, booped will turn to true, so it will wait to let the players velocity change, then raise it a bit more, to remove the tank knockback resistance
 	Wait(1/20);
-	ApplyImpulse(EventPlayer(),DirectionTowards(PositionOf(EventPlayer()),PositionOf(EventPlayer())+VelocityOf(EventPlayer())),SpeedOf(EventPlayer())*0.5,Relative.ToWorld,ContraryMotion.Incorporate);
+	ApplyImpulse(EventPlayer(),DirectionTowards(PositionOf(EventPlayer()),PositionOf(EventPlayer())+VelocityOf(EventPlayer())*Vector(1,0,1)),SpeedOf(EventPlayer())*0.5,Relative.ToWorld,ContraryMotion.Incorporate);
 	booped = 0;
 }
 
@@ -368,10 +375,36 @@ if(HeroOf(EventPlayer()) != Hero.Soldier76)
 	default_setup();
 }
 
+rule: "Healing Check Default"
+Event.OngoingPlayer
+if(HeroOf(EventPlayer()) != Hero.Lucio)
+{
+	if(anti_nade_check == 0)
+	{
+		SetHealingReceived(EventPlayer(),healing_recieved*100);
+	}
+	SetHealingDealt(EventPlayer(),healing_dealt);
+	Wait(5);
+	Loop();
+}
+
+rule: "Healing Check Lucio"
+Event.OngoingPlayer
+Player.Lucio
+{
+	if(anti_nade_check == 0)
+	{
+		SetHealingReceived(EventPlayer(),healing_recieved*100);
+	}
+	SetHealingDealt(EventPlayer(),64);
+	Wait(5);
+	Loop();
+}
 
 //manually track ult charge to ignore tank passive of giving less ult charge
 rule:"Ult Charge"
 Event.OngoingPlayer
+Player.Brigitte
 if(IsUsingUltimate(EventPlayer()) == false)
 if(IsGameInProgress())
 if(!IsBetweenRounds())
@@ -400,6 +433,7 @@ if(!IsBetweenRounds())
 
 rule:"Ult Charge Raise from Damage"
 Event.OnDamageDealt
+Player.Brigitte
 if(IsUsingUltimate(EventPlayer()) == false)
 if(Victim() != Attacker())
 {
@@ -408,6 +442,7 @@ if(Victim() != Attacker())
 
 rule:"Ult Charge Raise from Healing"
 Event.OnHealingDealt
+Player.Brigitte
 if(IsUsingUltimate(EventPlayer()) == false)
 if(!IsBetweenRounds())
 {
@@ -416,6 +451,7 @@ if(!IsBetweenRounds())
 
 rule: "Reset Ult Charge"
 Event.OngoingPlayer
+Player.Brigitte
 if(UltimateChargePercent() >= 100 && IsButtonHeld(EventPlayer(),Button.Ultimate))
 {
 	ult_charge = 0;
@@ -539,7 +575,7 @@ if(EventAbility() == Button.Ability2)
 	Wait(4);
 	DestroyEffect( Victim().anti_nade_effect);
 	Victim().anti_nade_check = 0;
-	SetHealingReceived(Victim(), 100);
+	SetHealingReceived(Victim(), Victim().healing_recieved*100);
 }
 
 rule: "Ana Sleep Dart Duration"
@@ -714,7 +750,6 @@ if (HeroOf(Healee()) == Hero.Lucio)
 	SetAbility2Enabled(EventPlayer(), true);
 }
 
-
 rule: "Brig: Check Shield Bash Range"
 Event.OngoingPlayer
 Player.Brigitte
@@ -852,7 +887,6 @@ Player.Dva
 if(EventAbility() == Button.Ability1)
 {
 	Victim().booped = 1;
-	
 }
 
 rule: "Dva: Movement Speed Penalty 1"
@@ -921,17 +955,6 @@ if (IsInAlternateForm(EventPlayer()) == true)
 {
 	RemoveHealthPoolFromPlayer(armor_reference);
 	RemoveHealthPoolFromPlayer(health_reference);
-	ult_charge_max = 315;
-	if (IsUsingUltimate(EventPlayer()))
-	{
-		stored_ult_charge = 0;
-		ult_charge = ult_charge_max;
-	}
-	else
-	{
-		stored_ult_charge = ult_charge;
-		ult_charge = 0;
-	}
 	define temp_health = 151 - HealthOfType(EventPlayer(), HealthType.Health);
 	Heal(EventPlayer(), null, temp_health);
 	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 50, true, true);
@@ -946,14 +969,10 @@ if (!IsInAlternateForm(EventPlayer()) == true)
 	Wait(0.033, WaitBehavior.IgnoreCondition);
 	SetMaxHealth(EventPlayer(), 66);
 	Wait(0.033, WaitBehavior.IgnoreCondition);
-	ult_charge_max = 1540;
-	ult_charge = stored_ult_charge;
-	Wait(0.033, WaitBehavior.IgnoreCondition);
 	Heal(EventPlayer(), null, 1000);
 	define temp_health = 400 - HealthOfType(EventPlayer(), HealthType.Health);
 	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health, true, true);
 	health_reference = LastCreatedHealthPool();
-	SetUltimateCharge(EventPlayer(), ult_charge / ult_charge_max);
 	if (MaxHealthOfType(EventPlayer(), HealthType.Armor) < 200)
 	{
 		define temp_armor = 200 - HealthOfType(EventPlayer(), HealthType.Armor);
@@ -1247,6 +1266,8 @@ if(EventDamage() < 50)
 //winton
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//50% ult charge
+//damage set to 90%
 rule: "Winston: Primal Range boop range"
 Event.OnDamageTaken
 if(HeroOf(Attacker()) == Hero.Winston)
