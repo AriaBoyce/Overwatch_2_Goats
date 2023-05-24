@@ -1,113 +1,88 @@
 variables
 {
     global:
-        0: server_load_average
-        1: server_load_count
-        2: debug_mode
-        3: scrim_mode
-        4: team_1_lucio
-        5: team_2_lucio
-        6: team_1_moira
-        7: team_2_moira
-        8: team_1_brig
-        9: team_2_brig
-        10: temp_count
-        11: lucio_mode
-        12: server_stress_time
+        0: temp_count
+        1: server_stress_time
     player:
-        0: nano_check
-        1: anti_nade_check
-        2: anti_nade_effect
-        3: effect_scale
-        4: health_reference
-        5: armor_reference
-        6: shield_reference
-        7: dva_ult_check
-        8: dva_health_check
-        9: lucio_music
-        10: damage_var
-        11: damage_taken
-        12: move_var
-        13: move_modify
-        14: time_since_damage
-        15: time_since_damage_shield
-        16: max_health
-        17: max_shield_health
-        18: current_shield_health
-        19: lucio_beat
-        20: lucio_overhealth
-        21: role
-        22: is_asleep
-        23: LastTarget
-        24: DiscordTarget
-        25: discord_timer
-        26: dam_modify
-        27: dam_var
-        28: is_shattered
-        29: moira_hot
-        30: moira_hot_ref
-        31: brig_hud_ref
-        32: moira_resource
-        33: brig_ult
-        34: brig_ult_ref
-        35: brig_ult_armor_ref
-        36: brig_ult_armor_amount
-        37: ult_charge
-        38: ult_charge_max
-        39: brig_inspire
-        40: brig_inspire_ref
-        41: brig_damage_timer
-        42: player_hero
-        43: zen_discord_reference
-        44: brig_shield_range
-        45: stored_ult_charge
-        46: healing_recieved
-        47: array_sum_temp
-        48: hero_list
-        49: current_health
-        50: zen_harmony_target
-        51: zen_harmony_timer
-        52: zen_harmony_heal
-        53: zen_harmony_ref
-        54: booped
-        55: interact_button
-        56: damage_float
-        57: brig_enemy_range
-        58: zarya_shield_cooldown_1
-        59: zarya_shield_cooldown_2
-        60: healing_dealt
-        61: temp_player
-        62: temp_player_0
-        63: temp_player_1
-        64: temp_player_2
-        65: temp_player_3
-        66: temp_player_4
-        67: temp_team_hero
-        68: temp_team_hero_0
-        69: temp_player_5
-        70: temp_player_6
-        71: i
-        72: temp_health
-        73: heal_amount
-        74: temp_health_0
-        75: heal_amount_0
-        76: temp_range
-        77: temp_range_0
-        78: temp_damage
-        79: temp_player_7
-        80: temp_player_8
-        81: temp_health_1
-        82: temp_health_2
-        83: temp_armor
-        84: temp_player_9
-        85: temp_player_10
-        86: temp_player_11
-        87: temp_player_12
-        88: temp_player_13
-        89: temp_player_14
+        0: effect_scale
+        1: health_reference
+        2: armor_reference
+        3: shield_reference
+        4: damage_var
+        5: damage_taken
+        6: move_var
+        7: move_modify
+        8: role
+        9: dam_modify
+        10: player_hero
+        11: healing_recieved
+        12: array_sum_temp
+        13: hero_list
+        14: booped
+        15: interact_button
+        16: damage_float
+        17: nano_check
+        18: anti_nade_check
+        19: anti_nade_effect
+        20: is_asleep
+        21: ana_healing_nade_healing
+        22: brig_hud_ref
+        23: brig_ult
+        24: brig_ult_ref
+        25: brig_ult_armor_ref
+        26: brig_ult_armor_amount
+        27: ult_charge
+        28: ult_charge_max
+        29: brig_inspire
+        30: brig_inspire_ref
+        31: brig_shield_range
+        32: brig_enemy_range
+        33: moira_resource
+        34: zarya_shield_cooldown_1
+        35: zarya_shield_cooldown_2
+        36: healing_dealt
+        37: zarya_hud_ref
+        38: zen_discord_hud_ref
+        39: time_since_damage
+        40: time_since_damage_shield
+        41: max_shield_health
+        42: current_shield_health
+        43: LastTarget
+        44: DiscordTarget
+        45: discord_timer
+        46: zen_discord_reference
+        47: temp_player
+        48: temp_player_0
+        49: temp_player_1
+        50: temp_player_2
+        51: temp_player_3
+        52: temp_player_4
+        53: temp_team_hero
+        54: temp_team_hero_0
+        55: temp_player_5
+        56: temp_player_6
+        57: i
+        58: temp_health
+        59: heal_amount
+        60: temp_health_0
+        61: heal_amount_0
+        62: temp_range
+        63: temp_range_0
+        64: temp_damage
+        65: temp_player_7
+        66: temp_player_8
+        67: temp_health_1
+        68: temp_health_2
+        69: temp_armor
+        70: temp_player_9
+        71: temp_player_10
+        72: temp_player_11
+        73: temp_player_12
+        74: temp_player_13
+        75: temp_player_14
 }
 
-rule("Create Server Load Text")
+rule("Disable Inspector")
 {
 
     event
@@ -165,9 +140,12 @@ rule("Has Spawned Setup")
         Has Spawned(Event Player) == True;
     }
 
-    // Action count: 154
+    // Action count: 144
     actions
     {
+        Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
+        Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
+        Destroy HUD Text(Player Variable(Event Player, zen_discord_hud_ref));
         Set Ability 1 Enabled(Event Player, True);
         Set Ability 2 Enabled(Event Player, True);
         Set Ultimate Charge(Event Player, 0);
@@ -198,16 +176,10 @@ rule("Has Spawned Setup")
         If(Compare(Hero Of(Event Player), ==, Hero(Ana)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
-            Set Player Variable(Event Player, ult_charge_max, 100);
-            Set Player Variable(Event Player, ult_charge_max, 2100);
+            Set Player Variable(Event Player, ana_healing_nade_healing, 26.6666666667);
             Wait(0.016, Ignore Condition);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Brigitte)));
             Set Ultimate Ability Enabled(Event Player, False);
-            If(Compare(Team Of(Event Player), ==, Team 1));
-                Set Global Variable(team_1_brig, Event Player);
-            Else;
-                Set Global Variable(team_2_brig, Event Player);
-            End;
             Set Player Variable(Event Player, role, 1);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, ult_charge_max, 2550);
@@ -218,17 +190,11 @@ rule("Has Spawned Setup")
             Add Health Pool To Player(Event Player, Health, 50, True, True);
             Set Player Variable(Event Player, health_reference, Last Created Health Pool);
             Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
-            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}", Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Top, 1, Color(White), Color(Black), Color(White), String, Visible Never);
+            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                                                 "), Custom String("                                                              "), Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Left, 0, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, brig_hud_ref, Last Text ID);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Lúcio)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
-            Set Player Variable(Event Player, ult_charge_max, 2900);
-            If(Compare(Team Of(Event Player), ==, Team 1));
-                Set Global Variable(team_1_lucio, Event Player);
-            Else;
-                Set Global Variable(team_2_lucio, Event Player);
-            End;
             Else If(Compare(Hero Of(Event Player), ==, Hero(Moira)));
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 1);
@@ -244,7 +210,8 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, current_shield_health, 150);
             Set Player Variable(Event Player, role, 1);
             Set Damage Dealt(Event Player, Player Variable(Event Player, damage_var));
-            Create HUD Text(Event Player, Null, Null, Custom String("Discord: {0}", Hero Of(Player Variable(Event Player, DiscordTarget))), Right, 0, Color(White), Color(White), Color(Purple), String, Visible Never);
+            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                    "), Custom String("                                                                                                                 "), Hero Of(Player Variable(Event Player, DiscordTarget))), Left, 0, Color(White), Color(White), Color(Purple), String, Visible Never);
+            Set Player Variable(Event Player, zen_discord_hud_ref, Last Text ID);
         End;
         Wait(0.016, Ignore Condition);
         If(Compare(Hero Of(Event Player), ==, Hero(D.va)));
@@ -252,13 +219,10 @@ rule("Has Spawned Setup")
                 Set Max Health(Event Player, 10);
                 Wait(0.0333333333, Ignore Condition);
             End;
-            Set Player Variable(Event Player, ult_charge_max, 1540);
-            Set Player Variable(Event Player, dva_ult_check, 0);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Reinhardt)));
             Wait(0.1, Ignore Condition);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 0);
-            Set Player Variable(Event Player, ult_charge_max, 1540);
             Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Max Health(Event Player, 166.6666666667);
             Set Player Variable(Event Player, temp_player, Event Player);
@@ -320,8 +284,27 @@ rule("Has Spawned Setup")
             Set Player Variable(Player Variable(Event Player, temp_player_1), damage_taken, Player Variable(Player Variable(Event Player, temp_player_1), array_sum_temp));
             Set Player Variable(Player Variable(Event Player, temp_player_1), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_1), damage_taken), 100));
             Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
-            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}             {1}                                                               ", Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Right, 1, Color(White), Color(Black), Color(White), String, Visible Never);
+            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}", Custom String("                                                                                                                      "), Custom String("{0}{1}", Custom String("                                                                                "), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up)), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Left, 1, Color(White), Color(Black), Color(White), String, Visible Never);
+            Set Player Variable(Event Player, zarya_hud_ref, Last Text ID);
         End;
+    }
+}
+
+rule("Remove Effects On Death")
+{
+
+    event
+    {
+        Player died;
+        All;
+        All;
+    }
+
+    // Action count: 2
+    actions
+    {
+        Destroy Effect(Player Variable(Event Player, anti_nade_effect));
+        Destroy Effect(Player Variable(Event Player, brig_ult_ref));
     }
 }
 
@@ -365,9 +348,12 @@ rule("Check For Hero Swap")
         Hero Of(Event Player) != Hero(Soldier: 76);
     }
 
-    // Action count: 154
+    // Action count: 144
     actions
     {
+        Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
+        Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
+        Destroy HUD Text(Player Variable(Event Player, zen_discord_hud_ref));
         Set Ability 1 Enabled(Event Player, True);
         Set Ability 2 Enabled(Event Player, True);
         Set Ultimate Charge(Event Player, 0);
@@ -398,16 +384,10 @@ rule("Check For Hero Swap")
         If(Compare(Hero Of(Event Player), ==, Hero(Ana)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
-            Set Player Variable(Event Player, ult_charge_max, 100);
-            Set Player Variable(Event Player, ult_charge_max, 2100);
+            Set Player Variable(Event Player, ana_healing_nade_healing, 26.6666666667);
             Wait(0.016, Ignore Condition);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Brigitte)));
             Set Ultimate Ability Enabled(Event Player, False);
-            If(Compare(Team Of(Event Player), ==, Team 1));
-                Set Global Variable(team_1_brig, Event Player);
-            Else;
-                Set Global Variable(team_2_brig, Event Player);
-            End;
             Set Player Variable(Event Player, role, 1);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, ult_charge_max, 2550);
@@ -418,17 +398,11 @@ rule("Check For Hero Swap")
             Add Health Pool To Player(Event Player, Health, 50, True, True);
             Set Player Variable(Event Player, health_reference, Last Created Health Pool);
             Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
-            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}", Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Top, 1, Color(White), Color(Black), Color(White), String, Visible Never);
+            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                                                 "), Custom String("                                                              "), Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Left, 0, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, brig_hud_ref, Last Text ID);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Lúcio)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
-            Set Player Variable(Event Player, ult_charge_max, 2900);
-            If(Compare(Team Of(Event Player), ==, Team 1));
-                Set Global Variable(team_1_lucio, Event Player);
-            Else;
-                Set Global Variable(team_2_lucio, Event Player);
-            End;
             Else If(Compare(Hero Of(Event Player), ==, Hero(Moira)));
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 1);
@@ -444,7 +418,8 @@ rule("Check For Hero Swap")
             Set Player Variable(Event Player, current_shield_health, 150);
             Set Player Variable(Event Player, role, 1);
             Set Damage Dealt(Event Player, Player Variable(Event Player, damage_var));
-            Create HUD Text(Event Player, Null, Null, Custom String("Discord: {0}", Hero Of(Player Variable(Event Player, DiscordTarget))), Right, 0, Color(White), Color(White), Color(Purple), String, Visible Never);
+            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                    "), Custom String("                                                                                                                 "), Hero Of(Player Variable(Event Player, DiscordTarget))), Left, 0, Color(White), Color(White), Color(Purple), String, Visible Never);
+            Set Player Variable(Event Player, zen_discord_hud_ref, Last Text ID);
         End;
         Wait(0.016, Ignore Condition);
         If(Compare(Hero Of(Event Player), ==, Hero(D.va)));
@@ -452,13 +427,10 @@ rule("Check For Hero Swap")
                 Set Max Health(Event Player, 10);
                 Wait(0.0333333333, Ignore Condition);
             End;
-            Set Player Variable(Event Player, ult_charge_max, 1540);
-            Set Player Variable(Event Player, dva_ult_check, 0);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Reinhardt)));
             Wait(0.1, Ignore Condition);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 0);
-            Set Player Variable(Event Player, ult_charge_max, 1540);
             Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Max Health(Event Player, 166.6666666667);
             Set Player Variable(Event Player, temp_player_2, Event Player);
@@ -520,7 +492,8 @@ rule("Check For Hero Swap")
             Set Player Variable(Player Variable(Event Player, temp_player_4), damage_taken, Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp));
             Set Player Variable(Player Variable(Event Player, temp_player_4), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_4), damage_taken), 100));
             Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
-            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}             {1}                                                               ", Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Right, 1, Color(White), Color(Black), Color(White), String, Visible Never);
+            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}", Custom String("                                                                                                                      "), Custom String("{0}{1}", Custom String("                                                                                "), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up)), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Left, 1, Color(White), Color(Black), Color(White), String, Visible Never);
+            Set Player Variable(Event Player, zarya_hud_ref, Last Text ID);
         End;
     }
 }
@@ -885,6 +858,39 @@ rule("Ana Anti Nade")
     }
 }
 
+rule("Ana: Healing Nade")
+{
+
+    event
+    {
+        Player Dealt Healing;
+        All;
+        Ana;
+    }
+
+    conditions
+    {
+        Event Ability == Button(Ability 2);
+    }
+
+    // Action count: 12
+    actions
+    {
+        Heal(Healee, Healer, Player Variable(Event Player, ana_healing_nade_healing));
+        Create Effect(All Players(All Teams), Ring, Color(Yellow), Healee, Player Variable(Event Player, effect_scale), Visible To Position and Radius);
+        Set Player Variable(Healee, anti_nade_effect, Last Created Entity);
+        Wait(3.5, Ignore Condition);
+        If(Compare(Player Variable(Healee, anti_nade_check), ==, 0));
+            Set Healing Received(Healee, Multiply(Player Variable(Event Player, healing_recieved), 150));
+        End;
+        Wait(0.5, Ignore Condition);
+        If(Compare(Player Variable(Healee, anti_nade_check), ==, 0));
+            Set Healing Received(Healee, Multiply(Player Variable(Event Player, healing_recieved), 100));
+        End;
+        Destroy Effect(Player Variable(Healee, anti_nade_effect));
+    }
+}
+
 rule("Ana Sleep Dart Duration")
 {
 
@@ -1213,7 +1219,7 @@ rule("Brig: Used Shield Bash")
     // Action count: 21
     actions
     {
-        Set Move Speed(Event Player, 40);
+        Set Move Speed(Event Player, 50);
         Set Player Variable(Event Player, temp_range_0, 5);
         If(Not(Is In Line Of Sight(Add(Eye Position(Event Player), Facing Direction Of(Event Player)), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), Vector(Player Variable(Event Player, temp_range_0), Empty Array, Player Variable(Event Player, temp_range_0)))), Enemy Barriers Block LOS)));
             Set Global Variable(temp_count, 1);

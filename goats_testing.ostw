@@ -1,34 +1,38 @@
-//0M6MN
-globalvar define team_1_lucio;
-globalvar define team_2_lucio;
-globalvar define team_1_brig;
-globalvar define team_2_brig;
+//0M6MN: Workshop code being used for this
+//Created by Aria Boyce, PROD (credit Shattered)
+
+//global vars
 globalvar define temp_count;
 globalvar define server_stress_time;
-playervar define nano_check;
-playervar define anti_nade_check;
-playervar define anti_nade_effect;
+
+//general variables
 playervar define effect_scale;
 playervar define health_reference;
 playervar define armor_reference;
 playervar define shield_reference;
-playervar define dva_ult_check;
 playervar define damage_var;
 playervar define damage_taken;
 playervar define move_var;
 playervar define move_modify;// (0,Dva Primary Fire) (1,Lucio Speed) (2, brig ult)
-playervar define time_since_damage;
-playervar define time_since_damage_shield;
-playervar define max_shield_health;
-playervar define current_shield_health;
 playervar define role;
-playervar define is_asleep;
-playervar define LastTarget;
-playervar define DiscordTarget;
-playervar define discord_timer;
 playervar define dam_modify;//(0,zen orb) (1,rein) (2,brig) (3,armor)
+playervar define player_hero;
+playervar define healing_recieved;
+playervar define array_sum_temp;
+playervar define hero_list;
+playervar define booped;
+playervar define interact_button;
+playervar define damage_float;
+
+//ana variables
+playervar define nano_check;
+playervar define anti_nade_check;
+playervar define anti_nade_effect;
+playervar define is_asleep;
+playervar define ana_healing_nade_healing;
+
+//brig variables
 playervar define brig_hud_ref;
-playervar define moira_resource;
 playervar define brig_ult;
 playervar define brig_ult_ref;
 playervar define brig_ult_armor_ref;
@@ -37,22 +41,28 @@ playervar define ult_charge;
 playervar define ult_charge_max;
 playervar define brig_inspire;
 playervar define brig_inspire_ref;
-playervar define player_hero;
-playervar define zen_discord_reference;
 playervar define brig_shield_range;
-playervar define healing_recieved;
-playervar define array_sum_temp;
-playervar define hero_list;
-playervar define booped;
-playervar define interact_button;
-playervar define damage_float;
 playervar define brig_enemy_range;
+
+//moira variables
+playervar define moira_resource;
+
+//zarya variables
 playervar define zarya_shield_cooldown_1;
 playervar define zarya_shield_cooldown_2;
 playervar define healing_dealt;
+
+//zen variables
 playervar define zarya_hud_ref;
 playervar define zen_discord_hud_ref;
-
+playervar define time_since_damage;
+playervar define time_since_damage_shield;
+playervar define max_shield_health;
+playervar define current_shield_health;
+playervar define LastTarget;
+playervar define DiscordTarget;
+playervar define discord_timer;
+playervar define zen_discord_reference;
 rule:"Disable Inspector"
 {
 	DisableInspectorRecording();
@@ -160,31 +170,18 @@ void default_setup()
 void ana_setup()
 {
     effect_scale = 0.5;
-    role = 1;
-    ult_charge_max = 100;
-    ult_charge_max = 2100;
+    role = 1;//support
+	ana_healing_nade_healing = 40/1.5;//healing nade extra healing to remove nerf
     Wait(0.016);
 }
 
 void brig_setup()
 {
 	SetUltimateAbilityEnabled(EventPlayer(),false);
-	if( TeamOf(EventPlayer()) == Team.Team1)
-	{
-		team_1_brig = EventPlayer();
-	}
-	else
-	{
-		team_2_brig = EventPlayer();
-	}
 	role = 1;
 	effect_scale = 1.0;
 	ult_charge_max = 2550;
-	//ult_charge_max = 255;
-	//dam_modify[2] = 100;
 	healing_recieved = 1;
-	//sum_array_damage(EventPlayer());
-	//SetDamageReceived(EventPlayer(),damage_taken);
 	SetHealingReceived(EventPlayer(), 100);
 	SetHealingDealt(EventPlayer(),1);
 	SetMaxHealth(EventPlayer(),50);
@@ -200,30 +197,18 @@ void dva_setup()
 		SetMaxHealth(EventPlayer(), 10);
 		Wait(1/30);
 	}
-	ult_charge_max = 1540;
-	dva_ult_check = 0;
 }
 
 void lucio_setup()
 {
 	effect_scale = 0.5;
 	role = 1;
-	ult_charge_max = 2900;
-	if( TeamOf(EventPlayer()) == Team.Team1)
-	{
-		team_1_lucio = EventPlayer();
-	}
-	else
-	{
-		team_2_lucio = EventPlayer();
-	}
 }
 void rein_setup()
 {
 	Wait(1/10);
 	effect_scale = 1.0;
 	role = 0;
-	ult_charge_max = 1540;
 	dam_modify[1] = 100;
 	SetMaxHealth(EventPlayer(),(2000/1200) * 100);
 	sum_array_damage(EventPlayer());
@@ -557,7 +542,7 @@ Event.OnHealingDealt
 Player.Ana
 if(EventAbility() == Button.Ability2)
 {
-	Heal(Healee(),Healer(),40/1.5);
+	Heal(Healee(),Healer(),ana_healing_nade_healing);
 	Healee().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Yellow, Healee(), effect_scale, EffectRev.VisibleToPositionAndRadius);
 	Wait(3.5);
 	if(Healee().anti_nade_check == 0)
