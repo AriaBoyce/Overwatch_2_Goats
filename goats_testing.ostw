@@ -1,14 +1,10 @@
 //0M6MN
-globalvar define server_load_average;
-globalvar define server_load_count;
-globalvar define debug_mode;
-globalvar define scrim_mode;
 globalvar define team_1_lucio;
 globalvar define team_2_lucio;
-globalvar define team_1_moira;
-globalvar define team_2_moira;
 globalvar define team_1_brig;
 globalvar define team_2_brig;
+globalvar define temp_count;
+globalvar define server_stress_time;
 playervar define nano_check;
 playervar define anti_nade_check;
 playervar define anti_nade_effect;
@@ -17,29 +13,20 @@ playervar define health_reference;
 playervar define armor_reference;
 playervar define shield_reference;
 playervar define dva_ult_check;
-playervar define dva_health_check;
-playervar define lucio_music;
 playervar define damage_var;
 playervar define damage_taken;
 playervar define move_var;
 playervar define move_modify;// (0,Dva Primary Fire) (1,Lucio Speed) (2, brig ult)
 playervar define time_since_damage;
 playervar define time_since_damage_shield;
-playervar define max_health;//normal max health of hero
 playervar define max_shield_health;
 playervar define current_shield_health;
-playervar define lucio_beat;
-playervar define lucio_overhealth;
 playervar define role;
 playervar define is_asleep;
 playervar define LastTarget;
 playervar define DiscordTarget;
 playervar define discord_timer;
 playervar define dam_modify;//(0,zen orb) (1,rein) (2,brig) (3,armor)
-playervar define dam_var;
-playervar define is_shattered;
-playervar define moira_hot;
-playervar define moira_hot_ref;
 playervar define brig_hud_ref;
 playervar define moira_resource;
 playervar define brig_ult;
@@ -50,39 +37,30 @@ playervar define ult_charge;
 playervar define ult_charge_max;
 playervar define brig_inspire;
 playervar define brig_inspire_ref;
-playervar define brig_damage_timer;
 playervar define player_hero;
 playervar define zen_discord_reference;
 playervar define brig_shield_range;
-playervar define stored_ult_charge;
 playervar define healing_recieved;
 playervar define array_sum_temp;
 playervar define hero_list;
-playervar define current_health;
-playervar define zen_harmony_target;
-playervar define zen_harmony_timer;
-playervar define zen_harmony_heal;
-playervar define zen_harmony_ref;
 playervar define booped;
-globalvar define temp_count;
-globalvar define lucio_mode;
 playervar define interact_button;
 playervar define damage_float;
-globalvar define server_stress_time;
 playervar define brig_enemy_range;
 playervar define zarya_shield_cooldown_1;
 playervar define zarya_shield_cooldown_2;
 playervar define healing_dealt;
+playervar define zarya_hud_ref;
+playervar define zen_discord_hud_ref;
 
-rule:"Create Server Load Text"
-Event.OngoingGlobal
+rule:"Disable Inspector"
 {
 	DisableInspectorRecording();
     //CreateHudText(null,null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
     //CreateHudText(null,null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
-	//lucio_mode = WorkshopSettingToggle("Testing","Reverts Lucio to old speed boost values, breaks other things and might crash", false, 2);
 }
 
+//Sum up damage taken changes
 Number sum_array_damage(Player temp_player)
 {
 	temp_player.array_sum_temp = 100;
@@ -96,6 +74,7 @@ Number sum_array_damage(Player temp_player)
 	return temp_player.array_sum_temp;
 }
 
+//sum up move speed changes
 Number sum_array_speed(Player temp_player)
 {
 	temp_player.array_sum_temp = 100;
@@ -106,8 +85,12 @@ Number sum_array_speed(Player temp_player)
 	temp_player.move_var = temp_player.array_sum_temp;
 	return array_sum_temp;
 }
+
 void default_setup()
 {
+	DestroyHudText(zarya_hud_ref);
+	DestroyHudText(brig_hud_ref);
+	DestroyHudText(zen_discord_hud_ref);
 	SetAbility1Enabled(EventPlayer(),true);
 	SetAbility2Enabled(EventPlayer(),true);
 	SetUltimateCharge(EventPlayer(),0);
@@ -207,7 +190,7 @@ void brig_setup()
 	SetMaxHealth(EventPlayer(),50);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
 	DestroyHudText(brig_hud_ref);
-	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}".Format([RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Top,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
+	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
 void dva_setup()
@@ -290,7 +273,7 @@ void zarya_setup()
 	dam_modify[1] = 100;
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
-	CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}             {1}                                                               ".Format([RoundToInteger(zarya_shield_cooldown_1),RoundToInteger(zarya_shield_cooldown_2)]),Location.Right,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
+	zarya_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}".Format(["                                                                                                                      ","                                                                                "+RoundToInteger(zarya_shield_cooldown_1),RoundToInteger(zarya_shield_cooldown_2)]),Location.Left,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
 void zen_setup()
@@ -303,7 +286,7 @@ void zen_setup()
 	current_shield_health = 150;
 	role = 1;
 	SetDamageDealt(EventPlayer(), damage_var);
-	CreateHudText(EventPlayer(),null,null,"Discord: {0}".Format([HeroOf(DiscordTarget)]),Location.Right,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
+	zen_discord_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                    ","                                                                                                                 ",HeroOf(DiscordTarget)]),Location.Left,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //General
@@ -340,23 +323,12 @@ if(HasSpawned())
     default_setup(); 
 }
 
-/*
-rule: "Create bot"
-Event.OngoingPlayer
-if(IsButtonHeld(EventPlayer(),Button.Interact))
+rule: "Remove Effects On Death"
+Event.OnDeath
 {
-	//create dummy bot for testing
-    DestroyAllDummyBots();
-	Wait(1/60);
-	//Damage(EventPlayer(),null,100);
-    define dummy_bot = CreateDummyBot(Hero.Brigitte,Team.Team2,1,EventPlayer(),FacingDirectionOf(EventPlayer()));
-	CreateInWorldText(AllPlayers(),"{0}".Format([Health(dummy_bot)]),PositionOf(dummy_bot),1,Clipping.DoNotClip,InworldTextRev.String,Color.White,Spectators.VisibleNever);
-	Wait(1);
-	dummy_bot.ult_charge = 1000;
-	StartHoldingButton(dummy_bot,Button.Ultimate);
+	DestroyEffect(anti_nade_effect);
+	DestroyEffect(brig_ult_ref);
 }
-*/
-
 rule:"Increased Knockback"
 Event.OngoingPlayer
 if(booped == 1)
@@ -375,6 +347,7 @@ if(HeroOf(EventPlayer()) != Hero.Soldier76)
 	default_setup();
 }
 
+//to try and fix a random bug where people just stop getting healed. reset healing values every once in awhile
 rule: "Healing Check Default"
 Event.OngoingPlayer
 if(HeroOf(EventPlayer()) != Hero.Lucio)
@@ -401,7 +374,7 @@ Player.Lucio
 	Loop();
 }
 
-//manually track ult charge to ignore tank passive of giving less ult charge
+//manually track ult charge for brig since she cant use default ult
 rule:"Ult Charge"
 Event.OngoingPlayer
 Player.Brigitte
@@ -578,6 +551,27 @@ if(EventAbility() == Button.Ability2)
 	SetHealingReceived(Victim(), Victim().healing_recieved*100);
 }
 
+//restore extra healing from healing nade
+rule: "Ana: Healing Nade"
+Event.OnHealingDealt
+Player.Ana
+if(EventAbility() == Button.Ability2)
+{
+	Heal(Healee(),Healer(),40/1.5);
+	Healee().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Yellow, Healee(), effect_scale, EffectRev.VisibleToPositionAndRadius);
+	Wait(3.5);
+	if(Healee().anti_nade_check == 0)
+	{
+		SetHealingReceived(Healee(),healing_recieved*150);
+	}
+	Wait(0.5);
+	if(Healee().anti_nade_check == 0)
+	{
+		SetHealingReceived(Healee(),healing_recieved*100);
+	}
+	DestroyEffect( Healee().anti_nade_effect);
+}
+
 rule: "Ana Sleep Dart Duration"
 Event.OnDamageDealt
 Player.Ana
@@ -585,12 +579,12 @@ if(EventAbility() == Button.Ability1)
 {
 	Wait(1/60);
 	Victim().is_asleep = true;
-	Wait(2);
+	Wait(2);//first two seconds of sleep duration
 	if(Victim().is_asleep == true)
 	{
 		ClearStatus(Victim(),Status.Asleep);
 		SetStatus(Victim(), Attacker(), Status.Asleep, 100);
-		Wait(3);
+		Wait(3);//wait next 3 seconds
 		ClearStatus(Victim(), Status.Asleep);
 		Victim().is_asleep = false;
 	}
@@ -655,8 +649,6 @@ if(ult_charge >= ult_charge_max-1)
 	sum_array_speed(EventPlayer());
 	SetMoveSpeed(EventPlayer(),move_var);
 }
-
-
 
 rule:"Brig: Ult Armor Gen"
 Event.OngoingPlayer
@@ -782,7 +774,8 @@ Player.Brigitte
 if(IsFiringSecondary(EventPlayer()))
 if(IsFiringPrimary(EventPlayer()))
 {
-	SetMoveSpeed(EventPlayer(),40);
+	//change this to adjust shield bash distance
+	SetMoveSpeed(EventPlayer(),50);
 	define temp_range = 5;
 	if(!IsInLineOfSight(EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer()),EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer())*Vector(temp_range,0,temp_range),BarrierLOS.EnemyBarriersBlock))
 	{
@@ -1003,120 +996,6 @@ if(EventAbility() == Button.SecondaryFire)
 	Victim().booped = 1;
 }
 
-/*
-rule: "Lucio: Apply Speed Boost Effects"
-Event.OngoingPlayer
-Player.Lucio
-if(lucio_mode == true)//only runs if set to in workshop settings
-if(IsButtonHeld(EventPlayer(),Button.Ability1) || IsButtonHeld(EventPlayer(),Button.Ability2))
-{
-	//get players in range and los, adjust speed if using speed boost
-	time_since_damage = PlayersWithinRadius(PositionOf(EventPlayer()),10,TeamOf(EventPlayer()),RadiusLOS.SurfacesAndEnemyBarriers);
-	if(IsUsingAbility1(EventPlayer()))
-	{
-		if(IsUsingAbility2(EventPlayer()))
-		{
-			//speed amp
-			time_since_damage.move_modify[1] = 6.3;
-			sum_array_speed(time_since_damage);
-			SetMoveSpeed(time_since_damage,time_since_damage.move_var);
-
-		}
-		else
-		{
-			//normal speed
-			time_since_damage.move_modify[1] = 4;
-			sum_array_speed(time_since_damage);
-			SetMoveSpeed(time_since_damage,time_since_damage.move_var);
-		}
-	}
-	else
-	{
-		time_since_damage.move_modify[1] = 0;
-		sum_array_speed(time_since_damage);
-		SetMoveSpeed(time_since_damage,time_since_damage.move_var);
-	}
-	Wait(0.25);
-	LoopIfConditionIsTrue();
-}
-
-rule: "Lucio: Remove Speed From Other Players"
-Event.OngoingPlayer
-Player.Lucio
-if(lucio_mode == true)
-{
-	//remove effect of speed boost from those that leave lucios aura with bit of grace time
-	time_since_damage = FilteredArray(AllPlayers(TeamOf(EventPlayer())),!IsInLineOfSight(EventPlayer(),ArrayElement(),BarrierLOS.EnemyBarriersBlock) || DistanceBetween(EventPlayer(),ArrayElement()) > 10);
-	time_since_damage.move_modify[1] = 0;
-	sum_array_speed(time_since_damage);
-	SetMoveSpeed(time_since_damage,time_since_damage.move_var);
-	Wait(1);
-	Loop();
-}
-
-rule:"Lucio: Increase Healing From Others"
-Event.OnHealingTaken
-if((HeroOf(Healee())==Hero.Lucio) && HeroOf(Healer()) != Hero.Lucio)
-{
-	//this is to reduce self healing
-	Heal(Healee(), Healer(), EventHealing()*0.563);
-}
-
-
-rule:"Lucio: Check For Beat Hit"
-Event.OngoingPlayer
-if(IsUsingUltimate(team_1_lucio))
-if(TeamOf(EventPlayer()) == Team.Team1)
-if(MaxHealth(EventPlayer()) >= max_health+745)
-{
-	//if recieves beat, remove it
-	Damage(EventPlayer(),null,748);
-	//give each player a slight offset for beat health to reduce peak server load
-	Wait(RandomReal(0,3/30));
-	lucio_beat = 500;
-}
-
-rule:"Lucio: Check For Beat Hit 2"
-Event.OngoingPlayer
-if(IsUsingUltimate(team_2_lucio))
-if(TeamOf(EventPlayer()) == Team.Team2)
-if(MaxHealth(EventPlayer()) >= max_health+745)
-{
-	Damage(EventPlayer(),null,748);
-	//give each player a slight offset for beat health to reduce peak server load
-	Wait(RandomReal(0,3/30));
-	lucio_beat = 500;
-}
-
-rule:"Lucio: Simulate Beat"
-Event.OngoingPlayer
-if(lucio_beat > 0)
-{
-	//create beat health pool and adjust it over time
-	RemoveHealthPoolFromPlayer(lucio_overhealth);
-	lucio_overhealth = AddHealthPoolToPlayer(EventPlayer(),HealthType.Shields, lucio_beat, false, true);
-	lucio_beat -= 25;
-	if(lucio_beat <= 0)
-	{
-		lucio_beat = 0;
-		RemoveHealthPoolFromPlayer(lucio_overhealth);
-	}
-	else
-	{
-		Wait(1/5);
-		LoopIfConditionIsTrue();
-	}
-
-}
-
-rule:"Lucio: Update Beat health from damage"
-Event.OnDamageTaken
-if(lucio_beat > 0)
-{
-	//lucio beat health should always be on top so this works fine
-	lucio_beat -= EventDamage();
-}
-*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Moira
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
