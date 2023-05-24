@@ -3,6 +3,8 @@ variables
     global:
         0: temp_count
         1: server_stress_time
+        2: scrim_mode_state
+        3: scrim_mode
     player:
         0: effect_scale
         1: health_reference
@@ -90,10 +92,12 @@ rule("Disable Inspector")
         Ongoing - Global;
     }
 
-    // Action count: 1
+    // Action count: 3
     actions
     {
         Disable Inspector Recording;
+        Set Global Variable(scrim_mode_state, 0);
+        Set Global Variable(scrim_mode, Workshop Setting Toggle(Custom String("Scrim Mode"), Custom String("Active"), False, 0));
     }
 }
 
@@ -2316,5 +2320,144 @@ rule("Zen: Reset 3 sec timer")
         Set Player Variable(Event Player, discord_timer, 0);
         Wait(0.25, Ignore Condition);
         Loop If Condition Is True;
+    }
+}
+
+rule("Round 1 Over")
+{
+
+    event
+    {
+        Ongoing - Global;
+    }
+
+    conditions
+    {
+        Global Variable(scrim_mode) == True;
+        Current Game Mode != Game Mode(Control);
+        Is Between Rounds == True;
+        Is Team On Offense(Team 2) == True;
+        Global Variable(scrim_mode_state) == 0;
+    }
+
+    // Action count: 2
+    actions
+    {
+        Set Team Score(Team 2, 3);
+        Set Global Variable(scrim_mode_state, 1);
+    }
+}
+
+rule("Round 2 Start")
+{
+
+    event
+    {
+        Ongoing - Global;
+    }
+
+    conditions
+    {
+        Global Variable(scrim_mode) == True;
+        Current Game Mode != Game Mode(Control);
+        Is Between Rounds == False;
+        Global Variable(scrim_mode_state) == 1;
+    }
+
+    // Action count: 1
+    actions
+    {
+        Set Global Variable(scrim_mode_state, 2);
+    }
+}
+
+rule("Round 2 Over")
+{
+
+    event
+    {
+        Ongoing - Global;
+    }
+
+    conditions
+    {
+        Global Variable(scrim_mode) == True;
+        Current Game Mode != Game Mode(Control);
+        Is Between Rounds == True;
+        Global Variable(scrim_mode_state) == 2;
+    }
+
+    // Action count: 2
+    actions
+    {
+        Set Team Score(Team 2, 3);
+        Declare Match Draw;
+    }
+}
+
+rule("Reduce Select Hero")
+{
+
+    event
+    {
+        Ongoing - Global;
+    }
+
+    conditions
+    {
+        Global Variable(scrim_mode) == True;
+        Is Assembling Heroes == True;
+    }
+
+    // Action count: 1
+    actions
+    {
+        Set Match Time(10);
+    }
+}
+
+rule("Control Score Count")
+{
+
+    event
+    {
+        Ongoing - Global;
+    }
+
+    conditions
+    {
+        Global Variable(scrim_mode) == True;
+        Current Game Mode == Game Mode(Control);
+        Is Between Rounds == True;
+    }
+
+    // Action count: 3
+    actions
+    {
+        Modify Global Variable(scrim_mode_state, Add, 1);
+        Set Team Score(Team 1, 0);
+        Set Team Score(Team 2, 0);
+    }
+}
+
+rule("Control Declare Draw")
+{
+
+    event
+    {
+        Ongoing - Global;
+    }
+
+    conditions
+    {
+        Global Variable(scrim_mode) == True;
+        Current Game Mode == Game Mode(Control);
+        Global Variable(scrim_mode_state) == 3;
+    }
+
+    // Action count: 1
+    actions
+    {
+        Declare Match Draw;
     }
 }

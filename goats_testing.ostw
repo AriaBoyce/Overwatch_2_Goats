@@ -1,9 +1,11 @@
 //0M6MN: Workshop code being used for this
-//Created by Aria Boyce, PROD (credit Shattered)
+//Created by Aria Boyce, PROD (credit Shattered), Used Concepts From Seita Scrim Lobby for very lightweight scrim mode
 
 //global vars
 globalvar define temp_count;
 globalvar define server_stress_time;
+globalvar define scrim_mode_state;
+globalvar define scrim_mode;
 
 //general variables
 playervar define effect_scale;
@@ -66,6 +68,8 @@ playervar define zen_discord_reference;
 rule:"Disable Inspector"
 {
 	DisableInspectorRecording();
+    scrim_mode_state = 0;
+    scrim_mode = WorkshopSettingToggle("Scrim Mode","Active",false,0);
     //CreateHudText(null,null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
     //CreateHudText(null,null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
 }
@@ -1308,4 +1312,67 @@ if (IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
 	discord_timer = 0;
 	Wait(1/4);
 	LoopIfConditionIsTrue();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Light Weight Scrim Code
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+rule: "Round 1 Over"
+Event.OngoingGlobal
+if(scrim_mode == true)
+if(CurrentGameMode() != GameMode.Control)
+if(IsBetweenRounds())
+if(IsTeamOnOffense(Team.Team2))
+if(scrim_mode_state == 0)
+{
+    SetTeamScore(Team.Team2,3);
+    scrim_mode_state = 1;
+}
+rule: "Round 2 Start"
+Event.OngoingGlobal
+if(scrim_mode == true)
+if(CurrentGameMode() != GameMode.Control)
+if(IsBetweenRounds() == false)
+if(scrim_mode_state == 1)
+{
+    scrim_mode_state = 2;
+}
+rule: "Round 2 Over"
+Event.OngoingGlobal
+if(scrim_mode == true)
+if(CurrentGameMode() != GameMode.Control)
+if(IsBetweenRounds())
+if(scrim_mode_state == 2)
+{
+    SetTeamScore(Team.Team2,3);
+    DeclareMatchDraw();
+}
+
+rule: "Reduce Select Hero"
+Event.OngoingGlobal
+if(scrim_mode == true)
+if(IsAssemblingHeroes())
+{
+    SetMatchTime(10);
+}
+
+rule: "Control Score Count"
+Event.OngoingGlobal
+if(scrim_mode == true)
+if(CurrentGameMode() == GameMode.Control)
+if(IsBetweenRounds())
+{
+    scrim_mode_state += 1;
+	SetTeamScore(Team.Team1,0);
+	SetTeamScore(Team.Team2,0);
+}
+
+rule:"Control Declare Draw"
+Event.OngoingGlobal
+if(scrim_mode == true)
+if(CurrentGameMode() == GameMode.Control)
+if(scrim_mode_state == 3)
+{
+    DeclareMatchDraw();
 }
