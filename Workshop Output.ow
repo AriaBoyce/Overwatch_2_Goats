@@ -39,42 +39,42 @@ variables
         30: brig_inspire_ref
         31: brig_shield_range
         32: brig_enemy_range
-        33: moira_resource
-        34: zarya_shield_cooldown_1
-        35: zarya_shield_cooldown_2
-        36: healing_dealt
-        37: zarya_hud_ref
-        38: zen_discord_hud_ref
-        39: time_since_damage
-        40: time_since_damage_shield
-        41: max_shield_health
-        42: current_shield_health
-        43: LastTarget
-        44: DiscordTarget
-        45: discord_timer
-        46: zen_discord_reference
-        47: temp_player
-        48: temp_player_0
-        49: temp_player_1
-        50: temp_player_2
-        51: temp_player_3
-        52: temp_player_4
-        53: temp_team_hero
-        54: temp_team_hero_0
-        55: temp_player_5
-        56: temp_player_6
-        57: i
-        58: temp_health
-        59: heal_amount
-        60: temp_health_0
-        61: heal_amount_0
-        62: temp_range
-        63: temp_range_0
-        64: temp_damage
-        65: temp_player_7
-        66: temp_player_8
-        67: temp_health_1
-        68: temp_health_2
+        33: armor_pack_ref
+        34: moira_resource
+        35: zarya_shield_cooldown_1
+        36: zarya_shield_cooldown_2
+        37: healing_dealt
+        38: zarya_hud_ref
+        39: zen_discord_hud_ref
+        40: time_since_damage
+        41: time_since_damage_shield
+        42: max_shield_health
+        43: current_shield_health
+        44: LastTarget
+        45: DiscordTarget
+        46: discord_timer
+        47: zen_discord_reference
+        48: temp_player
+        49: temp_player_0
+        50: temp_player_1
+        51: temp_player_2
+        52: temp_player_3
+        53: temp_player_4
+        54: temp_team_hero
+        55: temp_team_hero_0
+        56: temp_player_5
+        57: temp_player_6
+        58: i
+        59: temp_health
+        60: heal_amount
+        61: temp_health_0
+        62: heal_amount_0
+        63: temp_range
+        64: temp_range_0
+        65: temp_damage
+        66: temp_player_7
+        67: temp_player_8
+        68: temp_health_1
         69: temp_armor
         70: temp_player_9
         71: temp_player_10
@@ -144,7 +144,7 @@ rule("Has Spawned Setup")
         Has Spawned(Event Player) == True;
     }
 
-    // Action count: 144
+    // Action count: 145
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -154,6 +154,7 @@ rule("Has Spawned Setup")
         Set Ability 2 Enabled(Event Player, True);
         Set Ultimate Charge(Event Player, 0);
         Set Player Variable(Event Player, healing_dealt, 100);
+        Set Player Variable(Event Player, damage_float, 1);
         Set Player Variable(Event Player, hero_list, Array(Hero(D.va), Hero(Reinhardt), Hero(Winston), Hero(Zarya), Hero(Ana), Hero(Brigitte), Hero(Lúcio), Hero(Moira), Hero(Zenyatta)));
         Remove All Health Pools From Player(Event Player);
         Set Player Variable At Index(Event Player, move_modify, 0, 0);
@@ -352,7 +353,7 @@ rule("Check For Hero Swap")
         Hero Of(Event Player) != Hero(Soldier: 76);
     }
 
-    // Action count: 144
+    // Action count: 145
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -362,6 +363,7 @@ rule("Check For Hero Swap")
         Set Ability 2 Enabled(Event Player, True);
         Set Ultimate Charge(Event Player, 0);
         Set Player Variable(Event Player, healing_dealt, 100);
+        Set Player Variable(Event Player, damage_float, 1);
         Set Player Variable(Event Player, hero_list, Array(Hero(D.va), Hero(Reinhardt), Hero(Winston), Hero(Zarya), Hero(Ana), Hero(Brigitte), Hero(Lúcio), Hero(Moira), Hero(Zenyatta)));
         Remove All Health Pools From Player(Event Player);
         Set Player Variable At Index(Event Player, move_modify, 0, 0);
@@ -568,7 +570,7 @@ rule("Ult Charge")
         Not(Is Between Rounds) == True;
     }
 
-    // Action count: 13
+    // Action count: 8
     actions
     {
         If(Compare(Player Variable(Event Player, ult_charge), >=, Player Variable(Event Player, ult_charge_max)));
@@ -576,13 +578,8 @@ rule("Ult Charge")
             Set Ultimate Charge(Event Player, 100);
         End;
         Set Ultimate Charge(Event Player, Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100));
-        If(Compare(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), <, 0.8));
-            Modify Player Variable(Event Player, ult_charge, Add, 1);
-            Wait(Random Real(0.9, 1.1), Ignore Condition);
-        Else;
-            Modify Player Variable(Event Player, ult_charge, Add, 0.1);
-            Wait(0.1, Ignore Condition);
-        End;
+        Modify Player Variable(Event Player, ult_charge, Add, 0.3333333333);
+        Wait(0.1, Ignore Condition);
         Loop;
     }
 }
@@ -1101,7 +1098,7 @@ rule("Brig: Repair Pack Default")
         Hero Of(Healee) != Hero(Lúcio);
     }
 
-    // Action count: 20
+    // Action count: 19
     actions
     {
         Set Player Variable(Event Player, temp_health, Subtract(Max Health(Healee), Health(Healee)));
@@ -1119,10 +1116,9 @@ rule("Brig: Repair Pack Default")
             Set Player Variable(Event Player, heal_amount, 0);
         End;
         Add Health Pool To Player(Healee, Armor, Multiply(Player Variable(Event Player, heal_amount), Player Variable(Healee, healing_recieved)), False, True);
-        Set Player Variable(Event Player, temp_health, Last Created Health Pool);
+        Set Player Variable(Healee, armor_pack_ref, Last Created Health Pool);
         Set Ability 2 Enabled(Event Player, False);
         Wait(6, Ignore Condition);
-        Remove Health Pool From Player(Player Variable(Event Player, temp_health));
         Set Ability 2 Enabled(Event Player, True);
     }
 }
@@ -1143,7 +1139,7 @@ rule("Brig: Repair Pack Lucio")
         Hero Of(Healee) == Hero(Lúcio);
     }
 
-    // Action count: 17
+    // Action count: 16
     actions
     {
         Set Player Variable(Event Player, temp_health_0, Subtract(Max Health(Healee), Health(Healee)));
@@ -1158,11 +1154,34 @@ rule("Brig: Repair Pack Lucio")
             Set Player Variable(Event Player, heal_amount_0, 75);
         End;
         Add Health Pool To Player(Healee, Armor, Player Variable(Event Player, heal_amount_0), False, True);
-        Set Player Variable(Event Player, temp_health_0, Last Created Health Pool);
+        Set Player Variable(Healee, armor_pack_ref, Last Created Health Pool);
         Set Ability 2 Enabled(Event Player, False);
         Wait(6, Ignore Condition);
-        Remove Health Pool From Player(Player Variable(Event Player, temp_health_0));
         Set Ability 2 Enabled(Event Player, True);
+    }
+}
+
+rule("Brig: Remove Repair Pack Health")
+{
+
+    event
+    {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+
+    conditions
+    {
+        Player Variable(Event Player, armor_pack_ref) != Null;
+    }
+
+    // Action count: 3
+    actions
+    {
+        Wait(6, Ignore Condition);
+        Remove Health Pool From Player(Player Variable(Event Player, armor_pack_ref));
+        Set Player Variable(Event Player, armor_pack_ref, Null);
     }
 }
 
@@ -1516,9 +1535,10 @@ rule("Dva: Reduce Remech Damage")
         Is In Alternate Form(Event Player) == True;
     }
 
-    // Action count: 3
+    // Action count: 4
     actions
     {
+        Remove Health Pool From Player(Player Variable(Event Player, health_reference));
         Set Damage Dealt(Event Player, 20);
         Wait(1, Ignore Condition);
         Set Damage Dealt(Event Player, 100);
@@ -1563,14 +1583,13 @@ rule("Dva: Baby Health")
         Is In Alternate Form(Event Player) == True;
     }
 
-    // Action count: 5
+    // Action count: 4
     actions
     {
         Remove Health Pool From Player(Player Variable(Event Player, armor_reference));
         Remove Health Pool From Player(Player Variable(Event Player, health_reference));
-        Set Player Variable(Event Player, temp_health_1, Subtract(151, Health Of Type(Event Player, Health)));
-        Heal(Event Player, Null, Player Variable(Event Player, temp_health_1));
-        Add Health Pool To Player(Event Player, Health, 50, True, True);
+        Add Health Pool To Player(Event Player, Health, 51, True, True);
+        Set Player Variable(Event Player, health_reference, Last Created Health Pool);
     }
 }
 
@@ -1597,8 +1616,8 @@ rule("Dva: Mech Health")
         Set Max Health(Event Player, 66);
         Wait(0.033, Ignore Condition);
         Heal(Event Player, Null, 1000);
-        Set Player Variable(Event Player, temp_health_2, Subtract(400, Health Of Type(Event Player, Health)));
-        Add Health Pool To Player(Event Player, Health, Player Variable(Event Player, temp_health_2), True, True);
+        Set Player Variable(Event Player, temp_health_1, Subtract(400, Health Of Type(Event Player, Health)));
+        Add Health Pool To Player(Event Player, Health, Player Variable(Event Player, temp_health_1), True, True);
         Set Player Variable(Event Player, health_reference, Last Created Health Pool);
         If(Compare(Max Health Of Type(Event Player, Armor), <, 200));
             Set Player Variable(Event Player, temp_armor, Subtract(200, Health Of Type(Event Player, Armor)));
@@ -1668,12 +1687,11 @@ rule("Moira: More Self Heal")
         Event Ability == Button(Secondary Fire);
     }
 
-    // Action count: 3
+    // Action count: 2
     actions
     {
         Heal(Attacker, Attacker, 1.1);
         Wait(0.1666666667, Ignore Condition);
-        Loop If Condition Is True;
     }
 }
 
@@ -1692,7 +1710,7 @@ rule("Moira: Resource")
     {
         If(Is Firing Primary(Event Player));
             Set Healing Dealt(Event Player, 114.3);
-            Modify Player Variable(Event Player, moira_resource, Subtract, 0.3666666667);
+            Modify Player Variable(Event Player, moira_resource, Subtract, 0.5666666667);
         Else;
             Set Healing Dealt(Event Player, 100);
             Modify Player Variable(Event Player, moira_resource, Add, 0.1248);
@@ -1718,7 +1736,7 @@ rule("Moira: Gain Resource From Damage")
 
     conditions
     {
-        Is Firing Primary(Event Player) == True;
+        Event Ability == Button(Secondary Fire);
     }
 
     // Action count: 3

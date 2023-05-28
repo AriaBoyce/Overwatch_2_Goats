@@ -45,6 +45,7 @@ playervar define brig_inspire;
 playervar define brig_inspire_ref;
 playervar define brig_shield_range;
 playervar define brig_enemy_range;
+playervar define armor_pack_ref;
 
 //moira variables
 playervar define moira_resource;
@@ -109,6 +110,7 @@ void default_setup()
 	SetAbility2Enabled(EventPlayer(),true);
 	SetUltimateCharge(EventPlayer(),0);
 	healing_dealt = 100;
+	damage_float = 1.0;
 	hero_list = [Hero.Dva, Hero.Reinhardt, Hero.Winston, Hero.Zarya, Hero.Ana, Hero.Brigitte, Hero.Lucio, Hero.Moira, Hero.Zenyatta];
 	RemoveAllHealthPoolsFromPlayer(EventPlayer());
 	move_modify[0] = 0;// (0,Dva Primary Fire) (1,Lucio Speed) (2, brig ult)
@@ -378,17 +380,8 @@ if(!IsBetweenRounds())
 		SetUltimateCharge(EventPlayer(),100);
 	}
 	SetUltimateCharge(EventPlayer(),ult_charge/ult_charge_max*100);
-	if(ult_charge/ult_charge_max < 0.8)
-	{
-		//update ult charge less frequently when not close to ult to save on resources
-		ult_charge += 1;
-		Wait(RandomReal(0.9,1.1));//apply slight randomness to wait time, to shift load around
-	}
-	else
-	{	
-		ult_charge += 1/10;
-		Wait(1/10);
-	}
+	ult_charge += 1/3;//passive ult gain, higher = more, old value 1/10
+	Wait(1/10);
 	
 	Loop();
 }
@@ -695,10 +688,9 @@ if (HeroOf(Healee()) != Hero.Lucio)
 	{
 		heal_amount = 0;
 	}
-	temp_health = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount*Healee().healing_recieved, false, true);
+	Healee().armor_pack_ref = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount*Healee().healing_recieved, false, true);
 	SetAbility2Enabled(EventPlayer(), false);
 	Wait(6, WaitBehavior.IgnoreCondition);
-	RemoveHealthPoolFromPlayer(temp_health);
 	SetAbility2Enabled(EventPlayer(), true);
 }
 
@@ -723,12 +715,19 @@ if (HeroOf(Healee()) == Hero.Lucio)
 	{
 		heal_amount = 75;
 	}
-	AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
-	temp_health = LastCreatedHealthPool();
+	Healee().armor_pack_ref = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
 	SetAbility2Enabled(EventPlayer(), false);
 	Wait(6, WaitBehavior.IgnoreCondition);
-	RemoveHealthPoolFromPlayer(temp_health);
 	SetAbility2Enabled(EventPlayer(), true);
+}
+
+rule: "Brig: Remove Repair Pack Health"
+Event.OngoingPlayer
+if(armor_pack_ref != null)
+{
+	Wait(6);
+	RemoveHealthPoolFromPlayer(armor_pack_ref);
+	armor_pack_ref = null;
 }
 
 rule: "Brig: Check Shield Bash Range"
@@ -915,6 +914,7 @@ Player.Dva
 if(IsUsingUltimate(EventPlayer()))
 if(IsInAlternateForm() == true)
 {
+	RemoveHealthPoolFromPlayer(health_reference);	
 	SetDamageDealt(EventPlayer(), 20);
 	Wait(1);
 	SetDamageDealt(EventPlayer(), 100);
@@ -937,9 +937,10 @@ if (IsInAlternateForm(EventPlayer()) == true)
 {
 	RemoveHealthPoolFromPlayer(armor_reference);
 	RemoveHealthPoolFromPlayer(health_reference);
-	define temp_health = 151 - HealthOfType(EventPlayer(), HealthType.Health);
-	Heal(EventPlayer(), null, temp_health);
-	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 50, true, true);
+	health_reference= AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 51, true, true);
+	//define temp_health = 150 - HealthOfType(EventPlayer(), HealthType.Health);
+	//Heal(EventPlayer(), null, temp_health);
+	//AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health, true, true);
 }
 
 rule: "Dva: Mech Health"
@@ -997,7 +998,6 @@ if(EventAbility() == Button.SecondaryFire)
 	//increased self heal
 	Heal(Attacker(),Attacker(),1.1);
 	Wait(1/6);
-	LoopIfConditionIsTrue();
 }
 rule:"Moira: Resource"
 Event.OngoingPlayer
@@ -1007,7 +1007,7 @@ Player.Moira
 	if(IsFiringPrimary(EventPlayer()))
 	{
 		SetHealingDealt(EventPlayer(),114.3);
-		moira_resource -= 11/30;
+		moira_resource -= 17/30;
 	}
 	else
 	{
@@ -1027,7 +1027,7 @@ Player.Moira
 rule:"Moira: Gain Resource From Damage"
 Event.OnDamageDealt
 Player.Moira
-if(IsFiringPrimary(EventPlayer()))
+if(EventAbility() == Button.SecondaryFire)
 {
 	moira_resource += 12.15/30;
 	Wait(1/30);
