@@ -194,6 +194,7 @@ void brig_setup()
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
 	DestroyHudText(brig_hud_ref);
 	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
+	//CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",brig_shield_range]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
 void dva_setup()
@@ -277,7 +278,7 @@ void zen_setup()
 	current_shield_health = 150;
 	role = 1;
 	SetDamageDealt(EventPlayer(), damage_var);
-	zen_discord_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                    ","                                                                                                                 ",HeroOf(DiscordTarget)]),Location.Left,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
+	zen_discord_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                    ","                                                                                                                 ",HeroOf( DiscordTarget)]),Location.Left,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //General
@@ -318,7 +319,10 @@ rule: "Remove Effects On Death"
 Event.OnDeath
 {
 	DestroyEffect(anti_nade_effect);
+	DestroyEffect(ana_healing_nade_healing);
 	DestroyEffect(brig_ult_ref);
+	brig_ult = 0;
+	DestroyEffect(zen_discord_reference);
 }
 rule:"Increased Knockback"
 Event.OngoingPlayer
@@ -404,22 +408,13 @@ if(!IsBetweenRounds())
 	ult_charge += EventHealing()/(Healee().healing_recieved);
 }
 
-rule: "Reset Ult Charge"
-Event.OngoingPlayer
-Player.Brigitte
-if(UltimateChargePercent() >= 100 && IsButtonHeld(EventPlayer(),Button.Ultimate))
-{
-	ult_charge = 0;
-	SetUltimateCharge(EventPlayer(),0);
-}
-
-
 rule: "Reset on Round End"
 Event.OngoingPlayer
-Player.Brigitte
 if(IsBetweenRounds() == true)
 {
 	ult_charge = 0;
+	SetAbility1Enabled(EventPlayer(),true);
+	SetAbility2Enabled(EventPlayer(),true);
 }
 
 //if a support has less hp, deal a tiny bit of damage just before the support passive kicks in so they dont regen health
@@ -531,6 +526,7 @@ if(EventAbility() == Button.Ability2)
 	DestroyEffect( Victim().anti_nade_effect);
 	Victim().anti_nade_check = 0;
 	SetHealingReceived(Victim(), Victim().healing_recieved*100);
+	anti_nade_effect = null;
 }
 
 //restore extra healing from healing nade
@@ -540,7 +536,11 @@ Player.Ana
 if(EventAbility() == Button.Ability2)
 {
 	Heal(Healee(),Healer(),ana_healing_nade_healing);
-	Healee().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Yellow, Healee(), effect_scale, EffectRev.VisibleToPositionAndRadius);
+	if(anti_nade_effect == null)
+	{
+		DestroyEffect( Healee().anti_nade_effect);
+		Healee().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Yellow, Healee(), effect_scale, EffectRev.VisibleToPositionAndRadius);
+	}
 	Wait(3.5);
 	if(Healee().anti_nade_check == 0)
 	{
@@ -783,7 +783,7 @@ if(IsFiringPrimary(EventPlayer()))
 	brig_enemy_range = DistanceBetween(EventPlayer(),ClosestPlayerTo(PositionOf(EventPlayer()),OppositeTeamOf(TeamOf(EventPlayer()))));
 	if(brig_shield_range < 2.25)
 	{
-		SetStatus(EventPlayer(),null,Status.Stunned,0.01);
+		//SetStatus(EventPlayer(),null,Status.Stunned,0.01);
 	}
 	Wait(1/60);
 	LoopIfConditionIsTrue();
@@ -920,7 +920,6 @@ if(IsInAlternateForm() == true)
 	SetDamageDealt(EventPlayer(), 100);
 }
 
-
 rule: "Dva: Melee Cancels Boosters"
 Event.OngoingPlayer
 Player.Dva
@@ -953,17 +952,16 @@ if (!IsInAlternateForm(EventPlayer()) == true)
 	SetMaxHealth(EventPlayer(), 66);
 	Wait(0.033, WaitBehavior.IgnoreCondition);
 	Heal(EventPlayer(), null, 1000);
-	define temp_health = 400 - HealthOfType(EventPlayer(), HealthType.Health);
+	define temp_health = 400 - MaxHealthOfType(EventPlayer(), HealthType.Health);
 	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health, true, true);
 	health_reference = LastCreatedHealthPool();
 	if (MaxHealthOfType(EventPlayer(), HealthType.Armor) < 200)
 	{
-		define temp_armor = 200 - HealthOfType(EventPlayer(), HealthType.Armor);
+		define temp_armor = 200 - MaxHealthOfType(EventPlayer(), HealthType.Armor);
 		AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, temp_armor, true, true);
 		armor_reference = LastCreatedHealthPool();
 	}
 }
-
 
 rule: "Dva: Melee Cancels Boosters"
 Event.OngoingPlayer
@@ -1029,9 +1027,8 @@ Event.OnDamageDealt
 Player.Moira
 if(EventAbility() == Button.SecondaryFire)
 {
-	moira_resource += 12.15/30;
-	Wait(1/30);
-	LoopIfConditionIsTrue();
+	//moira_resource += 12.15/30;
+	moira_resource += 1;
 }
 
 rule:"Moira: Cant Fade while ulting"
@@ -1044,7 +1041,6 @@ if(IsUsingUltimate())
 	WaitUntil(IsUsingUltimate() == false,8);
 	SetAbility1Enabled(EventPlayer(),true);
 }
-
 
 rule:"Moira: Cant jump in Fade"
 Event.OngoingPlayer
@@ -1243,77 +1239,70 @@ if(EventAbility() == Button.Melee)
 	ApplyImpulse(Victim(),DirectionTowards(PositionOf(Victim()),PositionOf(Victim())+VelocityOf(Victim()))*Vector(-1,0,-1),SpeedOf(Victim())*0.9,Relative.ToWorld,ContraryMotion.Incorporate);
 }
 
-rule: "Zen Opponent Array LOS Check - PROD (credit Shattered)"
+rule: "Zen: Applied Discord"
 Event.OngoingPlayer
 Player.Zenyatta
-if (IsUsingAbility2(EventPlayer()) == true)
+if(IsUsingAbility2())
 {
-	Damage(FilteredArray(AllLivingPlayers(OppositeTeamOf(TeamOf(EventPlayer()))), IsInLineOfSight(EventPlayer(), ArrayElement(), BarrierLOS.NoBarriersBlock)), EventPlayer(), 0.1);
+	//clear discord target stats
+	DiscordTarget.dam_modify[0] = 0;
+	sum_array_damage(DiscordTarget);
+	SetDamageDealt(DiscordTarget,DiscordTarget.damage_taken);
+	DestroyEffect(DiscordTarget.zen_discord_reference);
+	DiscordTarget = null;
+	//Damage enemies to find new target
+	define zen_los = AllPlayers(OppositeTeamOf(TeamOf(EventPlayer())));
+	Damage(zen_los,EventPlayer(),0.1/zen_los.damage_float);
 }
 
-rule: "Zen Discord Orb Damage Mod - PROD (credit Shattered)"
-Event.OnDamageDealt
-Player.Zenyatta
-if (EventDamage() < 0.2)
+rule: "Zen: Discord Damage"
+Event.OnDamageTaken
+if(HeroOf(Attacker()) == Hero.Zenyatta)
+if(EventDamage() > 0.1 && EventDamage() < 1)
 {
-	Heal(Victim(), null, EventDamage());
-	if (EventDamage() != 0.1 && EventDamage() != 0.05)
+	Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
+	//0.08
+	Attacker().DiscordTarget = Victim();
+	Victim().dam_modify[0] = 4;
+	sum_array_damage(Victim());
+	SetDamageReceived(Victim(),Victim().damage_taken);
+	Victim().zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale,EffectRev.PositionAndRadius);
+}
+rule: "Zen: Discord Timer"
+Event.OngoingPlayer
+Player.Zenyatta
+if(IsUsingAbility2())
+{
+	if(IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.EnemyBarriersBlock))
 	{
-		if(Attacker().LastTarget != 0)
-		{
-			DestroyEffect(zen_discord_reference);
-			Attacker().LastTarget.dam_modify[0] = 0;
-			sum_array_damage(Attacker().LastTarget);
-			SetDamageReceived(Attacker().LastTarget, Attacker().LastTarget.damage_taken);
-			DestroyEffect(zen_discord_reference);
-		}
-		Victim().dam_modify[0] = 4;
-		sum_array_damage(Victim());
-		SetDamageReceived(Victim(), Victim().damage_taken);
-		Attacker().DiscordTarget = Victim();
-		LastTarget = Victim();
-		zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale/2,EffectRev.PositionAndRadius);
-		
+		discord_timer = 0;
 	}
-}
-
-rule: "Zen: Reset Discord"
-Event.OngoingPlayer
-Player.Zenyatta
-if (!IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
-if(DiscordTarget != 0)
-{
-	if(discord_timer >= 3)
+	else
+	{
+		discord_timer += 1/3;
+	}
+	if(discord_timer > 3)
 	{
 		DiscordTarget.dam_modify[0] = 0;
 		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget, DiscordTarget.damage_taken);
-		DiscordTarget = 0;
-		LastTarget = 0;
-		discord_timer = 0;
+		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
 		DestroyEffect(zen_discord_reference);
+		DiscordTarget = null;
 	}
-	else if(discord_timer >= 2)
+	else if(discord_timer > 2)
 	{
 		DiscordTarget.dam_modify[0] = 30;
 		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget, DiscordTarget.damage_taken);
+		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+		Wait(1/3);
+		Loop();
 	}
-	discord_timer += 1/4;
-	Wait(1/4);
-	Loop();
+	else
+	{
+		Wait(1/3);
+		Loop();
+	}
 }
-
-rule: "Zen: Reset 3 sec timer"
-Event.OngoingPlayer
-Player.Zenyatta
-if (IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
-{
-	discord_timer = 0;
-	Wait(1/4);
-	LoopIfConditionIsTrue();
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Light Weight Scrim Code
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
