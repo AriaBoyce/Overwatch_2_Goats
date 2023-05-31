@@ -79,10 +79,9 @@ variables
         70: temp_player_9
         71: temp_player_10
         72: temp_player_11
-        73: zen_los
-        74: temp_player_12
-        75: temp_player_13
-        76: temp_player_14
+        73: temp_player_12
+        74: temp_player_13
+        75: temp_player_14
 }
 
 rule("Disable Inspector")
@@ -2167,7 +2166,7 @@ rule("Zen: Decreased Boop Range")
     }
 }
 
-rule("Zen: Applied Discord")
+rule("Zen Opponent Array LOS Check - PROD (credit Shattered)")
 {
 
     event
@@ -2182,67 +2181,70 @@ rule("Zen: Applied Discord")
         Is Using Ability 2(Event Player) == True;
     }
 
-    // Action count: 16
+    // Action count: 1
     actions
     {
-        Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 0);
-        Set Player Variable(Event Player, temp_player_11, Player Variable(Event Player, DiscordTarget));
-        Set Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 4));
-            Modify Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_11), dam_modify), Global Variable(temp_count)));
-            Wait(0.0166666667, Ignore Condition);
-            Modify Global Variable(temp_count, Add, 1);
-        End;
-        Set Player Variable(Player Variable(Event Player, temp_player_11), damage_taken, Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp));
-        Set Player Variable(Player Variable(Event Player, temp_player_11), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_11), damage_taken), 100));
-        Set Damage Dealt(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
-        Destroy Effect(Player Variable(Player Variable(Event Player, DiscordTarget), zen_discord_reference));
-        Set Player Variable(Event Player, DiscordTarget, Null);
-        Set Player Variable(Event Player, zen_los, All Players(Opposite Team Of(Team Of(Event Player))));
-        Damage(Player Variable(Event Player, zen_los), Event Player, Divide(0.1, Player Variable(Player Variable(Event Player, zen_los), damage_float)));
+        Damage(Filtered Array(All Living Players(Opposite Team Of(Team Of(Event Player))), Is In Line Of Sight(Event Player, Current Array Element, Barriers Do Not Block LOS)), Event Player, 0.1);
     }
 }
 
-rule("Zen: Discord Damage")
+rule("Zen Discord Orb Damage Mod - PROD (credit Shattered)")
 {
 
     event
     {
-        Player took damage;
+        Player dealt damage;
         All;
-        All;
+        Zenyatta;
     }
 
     conditions
     {
-        Hero Of(Attacker) == Hero(Zenyatta);
-        And(Compare(Event Damage, >, 0.1), Compare(Event Damage, <, 1)) == True;
+        Event Damage < 0.2;
     }
 
-    // Action count: 16
+    // Action count: 35
     actions
     {
-        Heal(Victim, Null, Divide(Event Damage, Player Variable(Victim, healing_recieved)));
-        Set Player Variable(Attacker, DiscordTarget, Victim);
-        Set Player Variable At Index(Victim, dam_modify, 0, 4);
-        Set Player Variable(Event Player, temp_player_12, Victim);
-        Set Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 4));
-            Modify Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_12), dam_modify), Global Variable(temp_count)));
-            Wait(0.0166666667, Ignore Condition);
-            Modify Global Variable(temp_count, Add, 1);
+        Heal(Victim, Null, Event Damage);
+        If(And(Compare(Event Damage, !=, 0.1), Compare(Event Damage, !=, 0.05)));
+            If(Compare(Player Variable(Attacker, LastTarget), !=, 0));
+                Destroy Effect(Player Variable(Event Player, zen_discord_reference));
+                Set Player Variable At Index(Player Variable(Attacker, LastTarget), dam_modify, 0, 0);
+                Set Player Variable(Event Player, temp_player_11, Player Variable(Attacker, LastTarget));
+                Set Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp, 100);
+                Set Global Variable(temp_count, 0);
+                While(Compare(Global Variable(temp_count), <, 4));
+                    Modify Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_11), dam_modify), Global Variable(temp_count)));
+                    Wait(0.0166666667, Ignore Condition);
+                    Modify Global Variable(temp_count, Add, 1);
+                End;
+                Set Player Variable(Player Variable(Event Player, temp_player_11), damage_taken, Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp));
+                Set Player Variable(Player Variable(Event Player, temp_player_11), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_11), damage_taken), 100));
+                Set Damage Received(Player Variable(Attacker, LastTarget), Player Variable(Player Variable(Attacker, LastTarget), damage_taken));
+                Destroy Effect(Player Variable(Event Player, zen_discord_reference));
+            End;
+            Set Player Variable At Index(Victim, dam_modify, 0, 4);
+            Set Player Variable(Event Player, temp_player_12, Victim);
+            Set Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp, 100);
+            Set Global Variable(temp_count, 0);
+            While(Compare(Global Variable(temp_count), <, 4));
+                Modify Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_12), dam_modify), Global Variable(temp_count)));
+                Wait(0.0166666667, Ignore Condition);
+                Modify Global Variable(temp_count, Add, 1);
+            End;
+            Set Player Variable(Player Variable(Event Player, temp_player_12), damage_taken, Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_12), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_12), damage_taken), 100));
+            Set Damage Received(Victim, Player Variable(Victim, damage_taken));
+            Set Player Variable(Attacker, DiscordTarget, Victim);
+            Set Player Variable(Event Player, LastTarget, Victim);
+            Create Effect(All Players(All Teams), Bad Aura, Color(Purple), Victim, Divide(Player Variable(Victim, effect_scale), 2), Position And Radius);
+            Set Player Variable(Event Player, zen_discord_reference, Last Created Entity);
         End;
-        Set Player Variable(Player Variable(Event Player, temp_player_12), damage_taken, Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp));
-        Set Player Variable(Player Variable(Event Player, temp_player_12), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_12), damage_taken), 100));
-        Set Damage Received(Victim, Player Variable(Victim, damage_taken));
-        Create Effect(All Players(All Teams), Bad Aura, Color(Purple), Victim, Player Variable(Victim, effect_scale), Position And Radius);
-        Set Player Variable(Victim, zen_discord_reference, Last Created Entity);
     }
 }
 
-rule("Zen: Discord Timer")
+rule("Zen: Reset Discord")
 {
 
     event
@@ -2254,18 +2256,14 @@ rule("Zen: Discord Timer")
 
     conditions
     {
-        Is Using Ability 2(Event Player) == True;
+        Not(Is In Line Of Sight(Event Player, Player Variable(Event Player, DiscordTarget), Barriers Do Not Block LOS)) == True;
+        Player Variable(Event Player, DiscordTarget) != 0;
     }
 
-    // Action count: 39
+    // Action count: 34
     actions
     {
-        If(Is In Line Of Sight(Event Player, Player Variable(Event Player, DiscordTarget), Enemy Barriers Block LOS));
-            Set Player Variable(Event Player, discord_timer, 0);
-        Else;
-            Modify Player Variable(Event Player, discord_timer, Add, 0.3333333333);
-        End;
-        If(Compare(Player Variable(Event Player, discord_timer), >, 3));
+        If(Compare(Player Variable(Event Player, discord_timer), >=, 3));
             Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 0);
             Set Player Variable(Event Player, temp_player_13, Player Variable(Event Player, DiscordTarget));
             Set Player Variable(Player Variable(Event Player, temp_player_13), array_sum_temp, 100);
@@ -2278,9 +2276,11 @@ rule("Zen: Discord Timer")
             Set Player Variable(Player Variable(Event Player, temp_player_13), damage_taken, Player Variable(Player Variable(Event Player, temp_player_13), array_sum_temp));
             Set Player Variable(Player Variable(Event Player, temp_player_13), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_13), damage_taken), 100));
             Set Damage Received(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
+            Set Player Variable(Event Player, DiscordTarget, 0);
+            Set Player Variable(Event Player, LastTarget, 0);
+            Set Player Variable(Event Player, discord_timer, 0);
             Destroy Effect(Player Variable(Event Player, zen_discord_reference));
-            Set Player Variable(Event Player, DiscordTarget, Null);
-            Else If(Compare(Player Variable(Event Player, discord_timer), >, 2));
+            Else If(Compare(Player Variable(Event Player, discord_timer), >=, 2));
             Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 30);
             Set Player Variable(Event Player, temp_player_14, Player Variable(Event Player, DiscordTarget));
             Set Player Variable(Player Variable(Event Player, temp_player_14), array_sum_temp, 100);
@@ -2293,12 +2293,34 @@ rule("Zen: Discord Timer")
             Set Player Variable(Player Variable(Event Player, temp_player_14), damage_taken, Player Variable(Player Variable(Event Player, temp_player_14), array_sum_temp));
             Set Player Variable(Player Variable(Event Player, temp_player_14), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_14), damage_taken), 100));
             Set Damage Received(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
-            Wait(0.3333333333, Ignore Condition);
-            Loop;
-        Else;
-            Wait(0.3333333333, Ignore Condition);
-            Loop;
         End;
+        Modify Player Variable(Event Player, discord_timer, Add, 0.25);
+        Wait(0.25, Ignore Condition);
+        Loop;
+    }
+}
+
+rule("Zen: Reset 3 sec timer")
+{
+
+    event
+    {
+        Ongoing - Each Player;
+        All;
+        Zenyatta;
+    }
+
+    conditions
+    {
+        Is In Line Of Sight(Event Player, Player Variable(Event Player, DiscordTarget), Barriers Do Not Block LOS) == True;
+    }
+
+    // Action count: 3
+    actions
+    {
+        Set Player Variable(Event Player, discord_timer, 0);
+        Wait(0.25, Ignore Condition);
+        Loop If Condition Is True;
     }
 }
 

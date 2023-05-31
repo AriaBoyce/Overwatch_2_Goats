@@ -1239,69 +1239,75 @@ if(EventAbility() == Button.Melee)
 	ApplyImpulse(Victim(),DirectionTowards(PositionOf(Victim()),PositionOf(Victim())+VelocityOf(Victim()))*Vector(-1,0,-1),SpeedOf(Victim())*0.9,Relative.ToWorld,ContraryMotion.Incorporate);
 }
 
-rule: "Zen: Applied Discord"
+rule: "Zen Opponent Array LOS Check - PROD (credit Shattered)"
 Event.OngoingPlayer
 Player.Zenyatta
-if(IsUsingAbility2())
+if (IsUsingAbility2(EventPlayer()) == true)
 {
-	//clear discord target stats
-	DiscordTarget.dam_modify[0] = 0;
-	sum_array_damage(DiscordTarget);
-	SetDamageDealt(DiscordTarget,DiscordTarget.damage_taken);
-	DestroyEffect(DiscordTarget.zen_discord_reference);
-	DiscordTarget = null;
-	//Damage enemies to find new target
-	define zen_los = AllPlayers(OppositeTeamOf(TeamOf(EventPlayer())));
-	Damage(zen_los,EventPlayer(),0.1/zen_los.damage_float);
+	Damage(FilteredArray(AllLivingPlayers(OppositeTeamOf(TeamOf(EventPlayer()))), IsInLineOfSight(EventPlayer(), ArrayElement(), BarrierLOS.NoBarriersBlock)), EventPlayer(), 0.1);
 }
 
-rule: "Zen: Discord Damage"
-Event.OnDamageTaken
-if(HeroOf(Attacker()) == Hero.Zenyatta)
-if(EventDamage() > 0.1 && EventDamage() < 1)
+rule: "Zen Discord Orb Damage Mod - PROD (credit Shattered)"
+Event.OnDamageDealt
+Player.Zenyatta
+if (EventDamage() < 0.2)
 {
-	Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
-	//0.08
-	Attacker().DiscordTarget = Victim();
-	Victim().dam_modify[0] = 4;
-	sum_array_damage(Victim());
-	SetDamageReceived(Victim(),Victim().damage_taken);
-	Victim().zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale,EffectRev.PositionAndRadius);
+	Heal(Victim(), null, EventDamage());
+	if (EventDamage() != 0.1 && EventDamage() != 0.05)
+	{
+		if(Attacker().LastTarget != 0)
+		{
+			DestroyEffect(zen_discord_reference);
+			Attacker().LastTarget.dam_modify[0] = 0;
+			sum_array_damage(Attacker().LastTarget);
+			SetDamageReceived(Attacker().LastTarget, Attacker().LastTarget.damage_taken);
+			DestroyEffect(zen_discord_reference);
+		}
+		Victim().dam_modify[0] = 4;
+		sum_array_damage(Victim());
+		SetDamageReceived(Victim(), Victim().damage_taken);
+		Attacker().DiscordTarget = Victim();
+		LastTarget = Victim();
+		zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale/2,EffectRev.PositionAndRadius);
+		
+	}
 }
-rule: "Zen: Discord Timer"
+
+rule: "Zen: Reset Discord"
 Event.OngoingPlayer
 Player.Zenyatta
-if(IsUsingAbility2())
+if (!IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
+if(DiscordTarget != 0)
 {
-	if(IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.EnemyBarriersBlock))
-	{
-		discord_timer = 0;
-	}
-	else
-	{
-		discord_timer += 1/3;
-	}
-	if(discord_timer > 3)
+	if(discord_timer >= 3)
 	{
 		DiscordTarget.dam_modify[0] = 0;
 		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+		SetDamageReceived(DiscordTarget, DiscordTarget.damage_taken);
+		DiscordTarget = 0;
+		LastTarget = 0;
+		discord_timer = 0;
 		DestroyEffect(zen_discord_reference);
-		DiscordTarget = null;
 	}
-	else if(discord_timer > 2)
+	else if(discord_timer >= 2)
 	{
 		DiscordTarget.dam_modify[0] = 30;
 		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
-		Wait(1/3);
-		Loop();
+		SetDamageReceived(DiscordTarget, DiscordTarget.damage_taken);
 	}
-	else
-	{
-		Wait(1/3);
-		Loop();
-	}
+	discord_timer += 1/4;
+	Wait(1/4);
+	Loop();
+}
+
+rule: "Zen: Reset 3 sec timer"
+Event.OngoingPlayer
+Player.Zenyatta
+if (IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
+{
+	discord_timer = 0;
+	Wait(1/4);
+	LoopIfConditionIsTrue();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Light Weight Scrim Code
