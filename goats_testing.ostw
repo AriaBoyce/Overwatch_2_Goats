@@ -66,9 +66,10 @@ playervar define LastTarget;
 playervar define DiscordTarget;
 playervar define discord_timer;
 playervar define zen_discord_reference;
+playervar define Discorder;
 rule:"Disable Inspector"
 {
-	DisableInspectorRecording();
+	//DisableInspectorRecording();
     scrim_mode_state = 0;
     scrim_mode = WorkshopSettingToggle("Scrim Mode","Active",false,0);
     //CreateHudText(null,null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
@@ -178,7 +179,7 @@ void ana_setup()
     effect_scale = 0.5;
     role = 1;//support
 	ana_healing_nade_healing = 40/1.5;//healing nade extra healing to remove nerf
-    Wait(0.016);
+	damage_float = 1.0;
 }
 
 void brig_setup()
@@ -193,6 +194,7 @@ void brig_setup()
 	SetMaxHealth(EventPlayer(),50);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
 	DestroyHudText(brig_hud_ref);
+	damage_float = 1.0;
 	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 	//CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",brig_shield_range]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
@@ -204,12 +206,14 @@ void dva_setup()
 		SetMaxHealth(EventPlayer(), 10);
 		Wait(1/30);
 	}
+	role = 0;
 }
 
 void lucio_setup()
 {
 	effect_scale = 0.5;
 	role = 1;
+	damage_float = 1.0;
 }
 void rein_setup()
 {
@@ -221,6 +225,7 @@ void rein_setup()
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
 	SetHealingReceived(EventPlayer(),200);
+	damage_float = 2.0;
 	healing_recieved = 2;
 }
 void moira_setup()
@@ -231,6 +236,7 @@ void moira_setup()
 	ult_charge_max = 2390;
 	healing_dealt = 115;
 	SetHealingDealt(EventPlayer(),115);
+	damage_float = 1.0;
 }
 
 void winton_setup()
@@ -245,6 +251,7 @@ void winton_setup()
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
 	healing_recieved = 2;
+	damage_float = 2.0;
 }
 
 void zarya_setup()
@@ -265,6 +272,7 @@ void zarya_setup()
 	dam_modify[1] = 100;
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
+	damage_float = 2.0;
 	zarya_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}".Format(["                                                                                                                      ","                                                                                "+RoundToInteger(zarya_shield_cooldown_1),RoundToInteger(zarya_shield_cooldown_2)]),Location.Left,1,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
@@ -323,6 +331,7 @@ Event.OnDeath
 	DestroyEffect(brig_ult_ref);
 	brig_ult = 0;
 	DestroyEffect(zen_discord_reference);
+	Discorder.discord_timer = 3;
 }
 rule:"Increased Knockback"
 Event.OngoingPlayer
@@ -425,8 +434,8 @@ if(role == 1)
 if(Health(EventPlayer()) < MaxHealth(EventPlayer()))
 if(is_asleep == false)
 {
-	Heal(EventPlayer(),null,0.1);
-	Damage(EventPlayer(),null,0.1);
+	Heal(EventPlayer(),null,0.01);
+	Damage(EventPlayer(),null,0.01);
 	Wait(1.46);
 	LoopIfConditionIsTrue();
 }
@@ -934,6 +943,7 @@ Event.OngoingPlayer
 Player.Dva
 if (IsInAlternateForm(EventPlayer()) == true)
 {
+	Discorder.discord_timer = 3;
 	RemoveHealthPoolFromPlayer(armor_reference);
 	RemoveHealthPoolFromPlayer(health_reference);
 	health_reference= AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 51, true, true);
@@ -947,6 +957,7 @@ Event.OngoingPlayer
 Player.Dva
 if (!IsInAlternateForm(EventPlayer()) == true)
 {
+	Discorder.discord_timer = 3;
 	RemoveAllHealthPoolsFromPlayer(EventPlayer());
 	Wait(0.033, WaitBehavior.IgnoreCondition);
 	SetMaxHealth(EventPlayer(), 66);
@@ -1047,6 +1058,12 @@ Event.OngoingPlayer
 Player.Moira
 if(IsUsingAbility1())
 {
+	DestroyEffect(anti_nade_effect);
+	anti_nade_check = 0;
+	SetHealingReceived(EventPlayer(), healing_recieved*100);
+	anti_nade_effect = null;
+
+	Discorder.discord_timer = 3;//clear discord
 	DisallowButton(EventPlayer(),Button.Jump);
 	WaitUntil(IsUsingAbility1() == false,10);
 	AllowButton(EventPlayer(),Button.Jump);
@@ -1189,6 +1206,17 @@ if(IsUsingAbility2(EventPlayer()))
 	SetAbility2Enabled(EventPlayer(),true);
 }
 
+rule: "Zarya: Recieved Bubble"
+Event.OngoingPlayer
+if(HasStatus(EventPlayer(),Status.Invincible))
+{
+	Discorder.discord_timer = 3;
+
+	DestroyEffect(anti_nade_effect);
+	anti_nade_check = 0;
+	SetHealingReceived(EventPlayer(), healing_recieved*100);
+	anti_nade_effect = null;
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Zenyatta
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1239,76 +1267,84 @@ if(EventAbility() == Button.Melee)
 	ApplyImpulse(Victim(),DirectionTowards(PositionOf(Victim()),PositionOf(Victim())+VelocityOf(Victim()))*Vector(-1,0,-1),SpeedOf(Victim())*0.9,Relative.ToWorld,ContraryMotion.Incorporate);
 }
 
-rule: "Zen Opponent Array LOS Check - PROD (credit Shattered)"
+rule: "Zen: Discord Applied"
 Event.OngoingPlayer
 Player.Zenyatta
-if (IsUsingAbility2(EventPlayer()) == true)
+if(IsUsingAbility2())
 {
-	Damage(FilteredArray(AllLivingPlayers(OppositeTeamOf(TeamOf(EventPlayer()))), IsInLineOfSight(EventPlayer(), ArrayElement(), BarrierLOS.NoBarriersBlock)), EventPlayer(), 0.1);
+
+	//clear old discord
+	DiscordTarget.Discorder = null;
+	DiscordTarget.dam_modify[0] = 0;
+	sum_array_damage(DiscordTarget);
+	SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+	DestroyEffect(DiscordTarget.zen_discord_reference);
+	DiscordTarget = null;
+	
+	define zen_los = AllPlayers(OppositeTeamOf(TeamOf(EventPlayer())));
+	zen_los = FilteredArray(zen_los,IsInLineOfSight(EventPlayer(),ArrayElement(),BarrierLOS.NoBarriersBlock));
+	for(define i = 0; i < 6; i++)
+	{
+		Damage(zen_los[i],EventPlayer(),(0.1 / zen_los[i].damage_float));
+	}
 }
 
-rule: "Zen Discord Orb Damage Mod - PROD (credit Shattered)"
+rule: "Zen: Discord Damage"
 Event.OnDamageDealt
 Player.Zenyatta
-if (EventDamage() < 0.2)
-{
-	Heal(Victim(), null, EventDamage());
-	if (EventDamage() != 0.1 && EventDamage() != 0.05)
+if(EventDamage() < 1)
+{	
+	Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
+	if((EventDamage() > 0.07 && EventDamage() < 0.095) || EventDamage() > 0.105)
 	{
-		if(Attacker().LastTarget != 0)
+		DiscordTarget = Victim();
+		DiscordTarget.Discorder = Attacker();
+		DiscordTarget.dam_modify[0] = 3;
+		sum_array_damage(DiscordTarget);
+		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+		DiscordTarget.zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale/2,EffectRev.PositionAndRadius);
+	}
+}
+
+
+rule: "Zen: Discord timer"
+Event.OngoingPlayer
+Player.Zenyatta
+if(DiscordTarget != null)
+{
+	if(discord_timer < 3)
+	{
+		if(IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
 		{
-			DestroyEffect(zen_discord_reference);
-			Attacker().LastTarget.dam_modify[0] = 0;
-			sum_array_damage(Attacker().LastTarget);
-			SetDamageReceived(Attacker().LastTarget, Attacker().LastTarget.damage_taken);
-			DestroyEffect(zen_discord_reference);
+			discord_timer = 0;
 		}
-		Victim().dam_modify[0] = 4;
-		sum_array_damage(Victim());
-		SetDamageReceived(Victim(), Victim().damage_taken);
-		Attacker().DiscordTarget = Victim();
-		LastTarget = Victim();
-		zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale/2,EffectRev.PositionAndRadius);
-		
+		else
+		{
+			discord_timer += 1/4;
+		}
 	}
+
+
+    if(discord_timer >= 3)
+    {
+		DiscordTarget.Discorder = null;
+        DiscordTarget.dam_modify[0] = 0;
+        sum_array_damage(DiscordTarget);
+        SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+        DestroyEffect(DiscordTarget.zen_discord_reference);
+        DiscordTarget = null;
+        discord_timer = 0;
+    }
+    else if (discord_timer >= 2)
+    {
+        DiscordTarget.dam_modify[0] = 30;
+        sum_array_damage(DiscordTarget);
+        SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+    }
+    Wait(1/4);
+    LoopIfConditionIsTrue();
 }
 
-rule: "Zen: Reset Discord"
-Event.OngoingPlayer
-Player.Zenyatta
-if (!IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
-if(DiscordTarget != 0)
-{
-	if(discord_timer >= 3)
-	{
-		DiscordTarget.dam_modify[0] = 0;
-		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget, DiscordTarget.damage_taken);
-		DiscordTarget = 0;
-		LastTarget = 0;
-		discord_timer = 0;
-		DestroyEffect(zen_discord_reference);
-	}
-	else if(discord_timer >= 2)
-	{
-		DiscordTarget.dam_modify[0] = 30;
-		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget, DiscordTarget.damage_taken);
-	}
-	discord_timer += 1/4;
-	Wait(1/4);
-	Loop();
-}
-
-rule: "Zen: Reset 3 sec timer"
-Event.OngoingPlayer
-Player.Zenyatta
-if (IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
-{
-	discord_timer = 0;
-	Wait(1/4);
-	LoopIfConditionIsTrue();
-}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Light Weight Scrim Code
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
