@@ -425,6 +425,9 @@ if(IsBetweenRounds() == true)
 	ult_charge = 0;
 	SetAbility1Enabled(EventPlayer(),true);
 	SetAbility2Enabled(EventPlayer(),true);
+	Wait(10);
+	SetAbility1Enabled(EventPlayer(),true);
+	SetAbility2Enabled(EventPlayer(),true);
 }
 
 //if a support has less hp, deal a tiny bit of damage just before the support passive kicks in so they dont regen health

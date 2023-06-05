@@ -667,10 +667,13 @@ rule("Reset on Round End")
         Is Between Rounds == True;
     }
 
-    // Action count: 3
+    // Action count: 6
     actions
     {
         Set Player Variable(Event Player, ult_charge, 0);
+        Set Ability 1 Enabled(Event Player, True);
+        Set Ability 2 Enabled(Event Player, True);
+        Wait(10, Ignore Condition);
         Set Ability 1 Enabled(Event Player, True);
         Set Ability 2 Enabled(Event Player, True);
     }
