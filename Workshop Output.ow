@@ -95,9 +95,10 @@ rule("Disable Inspector")
         Ongoing - Global;
     }
 
-    // Action count: 2
+    // Action count: 3
     actions
     {
+        Disable Inspector Recording;
         Set Global Variable(scrim_mode_state, 0);
         Set Global Variable(scrim_mode, Workshop Setting Toggle(Custom String("Scrim Mode"), Custom String("Active"), False, 0));
     }
@@ -314,7 +315,7 @@ rule("Remove Effects On Death")
         All;
     }
 
-    // Action count: 6
+    // Action count: 7
     actions
     {
         Destroy Effect(Player Variable(Event Player, anti_nade_effect));
@@ -323,6 +324,7 @@ rule("Remove Effects On Death")
         Set Player Variable(Event Player, brig_ult, 0);
         Destroy Effect(Player Variable(Event Player, zen_discord_reference));
         Set Player Variable(Player Variable(Event Player, Discorder), discord_timer, 3);
+        Set Player Variable(Event Player, discord_timer, 3);
     }
 }
 
@@ -878,7 +880,7 @@ rule("Ana: Healing Nade")
     actions
     {
         Heal(Healee, Healer, Player Variable(Event Player, ana_healing_nade_healing));
-        If(Compare(Player Variable(Event Player, anti_nade_effect), ==, Null));
+        If(Compare(Player Variable(Healee, anti_nade_effect), ==, 0));
             Destroy Effect(Player Variable(Healee, anti_nade_effect));
             Create Effect(All Players(All Teams), Ring, Color(Yellow), Healee, Player Variable(Event Player, effect_scale), Visible To Position and Radius);
             Set Player Variable(Healee, anti_nade_effect, Last Created Entity);

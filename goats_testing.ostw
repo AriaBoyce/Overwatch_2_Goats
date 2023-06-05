@@ -69,11 +69,11 @@ playervar define zen_discord_reference;
 playervar define Discorder;
 rule:"Disable Inspector"
 {
-	//DisableInspectorRecording();
+	DisableInspectorRecording();
     scrim_mode_state = 0;
     scrim_mode = WorkshopSettingToggle("Scrim Mode","Active",false,0);
-    //CreateHudText(null,null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
-    //CreateHudText(null,null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
+    //CreateHudText(AllPlayers(Team.All),null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
+    //CreateHudText(AllPlayers(Team.All),null,null,"Server Load Average: {0}".Format([ServerLoadAverage()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
 }
 
 //Sum up damage taken changes
@@ -332,6 +332,7 @@ Event.OnDeath
 	brig_ult = 0;
 	DestroyEffect(zen_discord_reference);
 	Discorder.discord_timer = 3;
+	discord_timer = 3;
 }
 rule:"Increased Knockback"
 Event.OngoingPlayer
@@ -545,7 +546,7 @@ Player.Ana
 if(EventAbility() == Button.Ability2)
 {
 	Heal(Healee(),Healer(),ana_healing_nade_healing);
-	if(anti_nade_effect == null)
+	if(Healee().anti_nade_effect == 0)
 	{
 		DestroyEffect( Healee().anti_nade_effect);
 		Healee().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Yellow, Healee(), effect_scale, EffectRev.VisibleToPositionAndRadius);
