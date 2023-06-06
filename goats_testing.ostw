@@ -172,6 +172,7 @@ void default_setup()
     {
         zarya_setup();
     }   
+	SmallMessage(EventPlayer(),"Patch Version: 2.0.9 6/5/2023");
 }
 
 void ana_setup()
@@ -956,6 +957,9 @@ if (IsInAlternateForm(EventPlayer()) == true)
 	Discorder.discord_timer = 3;
 	RemoveHealthPoolFromPlayer(armor_reference);
 	RemoveHealthPoolFromPlayer(health_reference);
+	RemoveHealthPoolFromPlayer(brig_ult_armor_ref);
+	RemoveHealthPoolFromPlayer(armor_pack_ref);
+	brig_ult_armor_amount = 0;
 	health_reference= AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 51, true, true);
 	//define temp_health = 150 - HealthOfType(EventPlayer(), HealthType.Health);
 	//Heal(EventPlayer(), null, temp_health);
@@ -1198,9 +1202,9 @@ Player.Zarya
 if(IsUsingAbility1(EventPlayer()))
 {
 	SetAbility1Enabled(EventPlayer(),false);
-	zarya_shield_cooldown_1 = 10;
-	ChaseVariableOverTime(zarya_shield_cooldown_1,0,10,TimeChaseReevaluation.DestinationAndDuration);
-	Wait(10);
+	zarya_shield_cooldown_1 = 8;
+	ChaseVariableOverTime(zarya_shield_cooldown_1,0,8,TimeChaseReevaluation.DestinationAndDuration);
+	Wait(8);
 	SetAbility1Enabled(EventPlayer(),true);
 }
 
@@ -1210,9 +1214,9 @@ Player.Zarya
 if(IsUsingAbility2(EventPlayer()))
 {
 	SetAbility2Enabled(EventPlayer(),false);
-	zarya_shield_cooldown_2 = 10;
-	ChaseVariableOverTime(zarya_shield_cooldown_2,0,10,TimeChaseReevaluation.DestinationAndDuration);
-	Wait(10);
+	zarya_shield_cooldown_2 = 8;
+	ChaseVariableOverTime(zarya_shield_cooldown_2,0,8,TimeChaseReevaluation.DestinationAndDuration);
+	Wait(8);
 	SetAbility2Enabled(EventPlayer(),true);
 }
 
