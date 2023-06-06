@@ -95,9 +95,10 @@ rule("Disable Inspector")
         Ongoing - Global;
     }
 
-    // Action count: 2
+    // Action count: 3
     actions
     {
+        Disable Inspector Recording;
         Set Global Variable(scrim_mode_state, 0);
         Set Global Variable(scrim_mode, Workshop Setting Toggle(Custom String("Scrim Mode"), Custom String("Active"), False, 0));
     }
@@ -146,7 +147,7 @@ rule("Has Spawned Setup")
         Has Spawned(Event Player) == True;
     }
 
-    // Action count: 159
+    // Action count: 155
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -225,17 +226,13 @@ rule("Has Spawned Setup")
         End;
         Wait(0.016, Ignore Condition);
         If(Compare(Hero Of(Event Player), ==, Hero(D.va)));
-            While(Compare(Max Health(Event Player), >, 600));
-                Set Max Health(Event Player, 10);
-                Wait(0.0333333333, Ignore Condition);
-            End;
             Set Player Variable(Event Player, role, 0);
             Wait(1, Ignore Condition);
             Start Holding Button(Event Player, Button(Interact));
             Set Player Variable(Event Player, interact_button, 3);
-            Small Message(Event Player, Custom String("Forced Reset at spawn to deal with rare health issue. :)"));
-            Wait(1, Ignore Condition);
+            Wait(0.5, Ignore Condition);
             Stop Holding Button(Event Player, Button(Interact));
+            Small Message(Event Player, Custom String("Forced Reset at spawn to deal with rare health issue. :)"));
             Else If(Compare(Hero Of(Event Player), ==, Hero(Reinhardt)));
             Wait(0.1, Ignore Condition);
             Set Player Variable(Event Player, effect_scale, 1);
@@ -374,7 +371,7 @@ rule("Check For Hero Swap")
         Hero Of(Event Player) != Hero(Soldier: 76);
     }
 
-    // Action count: 159
+    // Action count: 155
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -453,17 +450,13 @@ rule("Check For Hero Swap")
         End;
         Wait(0.016, Ignore Condition);
         If(Compare(Hero Of(Event Player), ==, Hero(D.va)));
-            While(Compare(Max Health(Event Player), >, 600));
-                Set Max Health(Event Player, 10);
-                Wait(0.0333333333, Ignore Condition);
-            End;
             Set Player Variable(Event Player, role, 0);
             Wait(1, Ignore Condition);
             Start Holding Button(Event Player, Button(Interact));
             Set Player Variable(Event Player, interact_button, 3);
-            Small Message(Event Player, Custom String("Forced Reset at spawn to deal with rare health issue. :)"));
-            Wait(1, Ignore Condition);
+            Wait(0.5, Ignore Condition);
             Stop Holding Button(Event Player, Button(Interact));
+            Small Message(Event Player, Custom String("Forced Reset at spawn to deal with rare health issue. :)"));
             Else If(Compare(Hero Of(Event Player), ==, Hero(Reinhardt)));
             Wait(0.1, Ignore Condition);
             Set Player Variable(Event Player, effect_scale, 1);
