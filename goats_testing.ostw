@@ -210,6 +210,7 @@ void dva_setup()
 	Wait(1);
 	StartHoldingButton(EventPlayer(),Button.Interact);
 	interact_button = 3;
+	SmallMessage(EventPlayer(),"Forced Reset at spawn to deal with rare health issue. :)");
 	Wait(1);
 	StopHoldingButton(EventPlayer(),Button.Interact);
 }
