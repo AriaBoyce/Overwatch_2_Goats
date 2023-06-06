@@ -69,7 +69,7 @@ playervar define zen_discord_reference;
 playervar define Discorder;
 rule:"Disable Inspector"
 {
-	DisableInspectorRecording();
+	//DisableInspectorRecording();
     scrim_mode_state = 0;
     scrim_mode = WorkshopSettingToggle("Scrim Mode","Active",false,0);
     //CreateHudText(AllPlayers(Team.All),null,null,"Server Load: {0}".Format([ServerLoad()]),Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.VisibleAlways);
@@ -207,6 +207,11 @@ void dva_setup()
 		Wait(1/30);
 	}
 	role = 0;
+	Wait(1);
+	StartHoldingButton(EventPlayer(),Button.Interact);
+	interact_button = 3;
+	Wait(1);
+	StopHoldingButton(EventPlayer(),Button.Interact);
 }
 
 void lucio_setup()
