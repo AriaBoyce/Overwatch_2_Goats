@@ -61,30 +61,24 @@ variables
         52: temp_player_2
         53: temp_player_3
         54: temp_player_4
-        55: temp_team_hero
-        56: temp_team_hero_0
-        57: temp_player_5
-        58: temp_player_6
+        55: temp_player_5
+        56: temp_player_6
+        57: temp_team_hero
+        58: temp_team_hero_0
         59: i
         60: temp_health
         61: heal_amount
         62: temp_health_0
         63: heal_amount_0
-        64: temp_range
-        65: temp_range_0
-        66: temp_damage
+        64: temp_damage
+        65: temp_health_1
+        66: temp_armor
         67: temp_player_7
-        68: temp_player_8
-        69: temp_health_1
-        70: temp_armor
+        68: zen_los
+        69: i_0
+        70: temp_player_8
         71: temp_player_9
         72: temp_player_10
-        73: temp_player_11
-        74: zen_los
-        75: i_0
-        76: temp_player_12
-        77: temp_player_13
-        78: temp_player_14
 }
 
 rule("Disable Inspector")
@@ -147,7 +141,7 @@ rule("Has Spawned Setup")
         Has Spawned(Event Player) == True;
     }
 
-    // Action count: 155
+    // Action count: 157
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -199,12 +193,14 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, health_reference, Last Created Health Pool);
             Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
             Set Player Variable(Event Player, damage_float, 1);
+            Set Player Variable(Event Player, healing_dealt, 100);
             Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                                                 "), Custom String("                                                              "), Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Left, 0, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, brig_hud_ref, Last Text ID);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Lúcio)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
             Set Player Variable(Event Player, damage_float, 1);
+            Set Player Variable(Event Player, healing_dealt, 100);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Moira)));
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 1);
@@ -242,7 +238,7 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, temp_player, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
+            While(Compare(Global Variable(temp_count), <, 2));
                 Modify Player Variable(Player Variable(Event Player, temp_player), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
@@ -266,7 +262,7 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, temp_player_0, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_0), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
+            While(Compare(Global Variable(temp_count), <, 2));
                 Modify Player Variable(Player Variable(Event Player, temp_player_0), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_0), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
@@ -292,7 +288,7 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, temp_player_1, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_1), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
+            While(Compare(Global Variable(temp_count), <, 2));
                 Modify Player Variable(Player Variable(Event Player, temp_player_1), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_1), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
@@ -304,7 +300,7 @@ rule("Has Spawned Setup")
             Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}", Custom String("                                                                                                                      "), Custom String("{0}{1}", Custom String("                                                                                "), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up)), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Left, 1, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, zarya_hud_ref, Last Text ID);
         End;
-        Small Message(Event Player, Custom String("Patch Version: 2.0.9 6/5/2023"));
+        Small Message(Event Player, Custom String("Patch Version: 2.0.10 6/6/2023"));
     }
 }
 
@@ -318,7 +314,7 @@ rule("Remove Effects On Death")
         All;
     }
 
-    // Action count: 7
+    // Action count: 22
     actions
     {
         Destroy Effect(Player Variable(Event Player, anti_nade_effect));
@@ -328,6 +324,21 @@ rule("Remove Effects On Death")
         Destroy Effect(Player Variable(Event Player, zen_discord_reference));
         Set Player Variable(Player Variable(Event Player, Discorder), discord_timer, 3);
         Set Player Variable(Event Player, discord_timer, 3);
+        Set Player Variable At Index(Event Player, dam_modify, 0, 0);
+        Set Player Variable(Event Player, temp_player_2, Event Player);
+        Set Player Variable(Player Variable(Event Player, temp_player_2), array_sum_temp, 100);
+        Set Global Variable(temp_count, 0);
+        While(Compare(Global Variable(temp_count), <, 2));
+            Modify Player Variable(Player Variable(Event Player, temp_player_2), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_2), dam_modify), Global Variable(temp_count)));
+            Wait(0.0166666667, Ignore Condition);
+            Modify Global Variable(temp_count, Add, 1);
+        End;
+        Set Player Variable(Player Variable(Event Player, temp_player_2), damage_taken, Player Variable(Player Variable(Event Player, temp_player_2), array_sum_temp));
+        Set Player Variable(Player Variable(Event Player, temp_player_2), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_2), damage_taken), 100));
+        Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
+        Destroy Effect(Player Variable(Event Player, zen_discord_reference));
+        Wait(1, Ignore Condition);
+        Set Player Variable(Player Variable(Event Player, Discorder), DiscordTarget, Null);
     }
 }
 
@@ -371,7 +382,7 @@ rule("Check For Hero Swap")
         Hero Of(Event Player) != Hero(Soldier: 76);
     }
 
-    // Action count: 155
+    // Action count: 157
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -423,12 +434,14 @@ rule("Check For Hero Swap")
             Set Player Variable(Event Player, health_reference, Last Created Health Pool);
             Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
             Set Player Variable(Event Player, damage_float, 1);
+            Set Player Variable(Event Player, healing_dealt, 100);
             Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                                                 "), Custom String("                                                              "), Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Left, 0, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, brig_hud_ref, Last Text ID);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Lúcio)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
             Set Player Variable(Event Player, damage_float, 1);
+            Set Player Variable(Event Player, healing_dealt, 100);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Moira)));
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 1);
@@ -463,16 +476,16 @@ rule("Check For Hero Swap")
             Set Player Variable(Event Player, role, 0);
             Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Max Health(Event Player, 166.6666666667);
-            Set Player Variable(Event Player, temp_player_2, Event Player);
-            Set Player Variable(Player Variable(Event Player, temp_player_2), array_sum_temp, 100);
+            Set Player Variable(Event Player, temp_player_3, Event Player);
+            Set Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
-                Modify Player Variable(Player Variable(Event Player, temp_player_2), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_2), dam_modify), Global Variable(temp_count)));
+            While(Compare(Global Variable(temp_count), <, 2));
+                Modify Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_3), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
             End;
-            Set Player Variable(Player Variable(Event Player, temp_player_2), damage_taken, Player Variable(Player Variable(Event Player, temp_player_2), array_sum_temp));
-            Set Player Variable(Player Variable(Event Player, temp_player_2), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_2), damage_taken), 100));
+            Set Player Variable(Player Variable(Event Player, temp_player_3), damage_taken, Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_3), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_3), damage_taken), 100));
             Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
             Set Healing Received(Event Player, 200);
             Set Player Variable(Event Player, damage_float, 2);
@@ -487,16 +500,16 @@ rule("Check For Hero Swap")
             Add Health Pool To Player(Event Player, Armor, 15.39, True, True);
             Set Player Variable(Event Player, armor_reference, Last Created Health Pool);
             Set Player Variable At Index(Event Player, dam_modify, 1, 100);
-            Set Player Variable(Event Player, temp_player_3, Event Player);
-            Set Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp, 100);
+            Set Player Variable(Event Player, temp_player_4, Event Player);
+            Set Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
-                Modify Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_3), dam_modify), Global Variable(temp_count)));
+            While(Compare(Global Variable(temp_count), <, 2));
+                Modify Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_4), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
             End;
-            Set Player Variable(Player Variable(Event Player, temp_player_3), damage_taken, Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp));
-            Set Player Variable(Player Variable(Event Player, temp_player_3), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_3), damage_taken), 100));
+            Set Player Variable(Player Variable(Event Player, temp_player_4), damage_taken, Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_4), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_4), damage_taken), 100));
             Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
             Set Player Variable(Event Player, healing_recieved, 2);
             Set Player Variable(Event Player, damage_float, 2);
@@ -513,22 +526,22 @@ rule("Check For Hero Swap")
             Add Health Pool To Player(Event Player, Health, 150, True, True);
             Add Health Pool To Player(Event Player, Shields, 175, True, True);
             Set Player Variable At Index(Event Player, dam_modify, 1, 100);
-            Set Player Variable(Event Player, temp_player_4, Event Player);
-            Set Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp, 100);
+            Set Player Variable(Event Player, temp_player_5, Event Player);
+            Set Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
-                Modify Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_4), dam_modify), Global Variable(temp_count)));
+            While(Compare(Global Variable(temp_count), <, 2));
+                Modify Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_5), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
             End;
-            Set Player Variable(Player Variable(Event Player, temp_player_4), damage_taken, Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp));
-            Set Player Variable(Player Variable(Event Player, temp_player_4), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_4), damage_taken), 100));
+            Set Player Variable(Player Variable(Event Player, temp_player_5), damage_taken, Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_5), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_5), damage_taken), 100));
             Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
             Set Player Variable(Event Player, damage_float, 2);
             Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}", Custom String("                                                                                                                      "), Custom String("{0}{1}", Custom String("                                                                                "), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up)), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Left, 1, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, zarya_hud_ref, Last Text ID);
         End;
-        Small Message(Event Player, Custom String("Patch Version: 2.0.9 6/5/2023"));
+        Small Message(Event Player, Custom String("Patch Version: 2.0.10 6/6/2023"));
     }
 }
 
@@ -673,15 +686,32 @@ rule("Reset on Round End")
         Is Between Rounds == True;
     }
 
-    // Action count: 6
+    // Action count: 23
     actions
     {
         Set Player Variable(Event Player, ult_charge, 0);
         Set Ability 1 Enabled(Event Player, True);
         Set Ability 2 Enabled(Event Player, True);
+        Destroy All Effects;
+        Set Player Variable(Event Player, brig_ult, False);
+        Set Player Variable(Event Player, brig_ult_armor_amount, 0);
         Wait(10, Ignore Condition);
+        Destroy All Effects;
+        Set Player Variable At Index(Event Player, dam_modify, 0, 0);
+        Set Player Variable(Event Player, temp_player_6, Event Player);
+        Set Player Variable(Player Variable(Event Player, temp_player_6), array_sum_temp, 100);
+        Set Global Variable(temp_count, 0);
+        While(Compare(Global Variable(temp_count), <, 2));
+            Modify Player Variable(Player Variable(Event Player, temp_player_6), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_6), dam_modify), Global Variable(temp_count)));
+            Wait(0.0166666667, Ignore Condition);
+            Modify Global Variable(temp_count, Add, 1);
+        End;
+        Set Player Variable(Player Variable(Event Player, temp_player_6), damage_taken, Player Variable(Player Variable(Event Player, temp_player_6), array_sum_temp));
+        Set Player Variable(Player Variable(Event Player, temp_player_6), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_6), damage_taken), 100));
+        Set Damage Received(Event Player, Player Variable(Event Player, damage_taken));
         Set Ability 1 Enabled(Event Player, True);
         Set Ability 2 Enabled(Event Player, True);
+        Destroy All Effects;
     }
 }
 
@@ -1025,21 +1055,13 @@ rule("Brig: Try and cancel ult")
         Player Variable(Event Player, ult_charge) >= Subtract(Player Variable(Event Player, ult_charge_max), 1);
     }
 
-    // Action count: 29
+    // Action count: 12
     actions
     {
         Big Message(All Players(Opposite Team Of(Team Of(Event Player))), Custom String("RAID BOSS INCOMING"));
+        Big Message(All Players(Team Of(Event Player)), Custom String("RALLY TO ME"));
         Play Effect(All Players(All Teams), Buff Explosion Sound, Color(White), Event Player, 100);
-        Set Player Variable At Index(Event Player, move_modify, 2, 30);
-        Set Player Variable(Event Player, temp_player_5, Event Player);
-        Set Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 3));
-            Modify Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_5), move_modify), Global Variable(temp_count)));
-            Modify Global Variable(temp_count, Add, 1);
-        End;
-        Set Player Variable(Player Variable(Event Player, temp_player_5), move_var, Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp));
-        Set Move Speed(Event Player, Player Variable(Event Player, move_var));
+        Set Move Speed(Event Player, 130);
         Set Player Variable(Event Player, ult_charge, 0);
         Set Player Variable(Event Player, brig_ult, True);
         Create Effect(All Players(All Teams), Ring, Color(Yellow), Position Of(Event Player), 8.5, Visible To Position and Radius);
@@ -1047,16 +1069,7 @@ rule("Brig: Try and cancel ult")
         Wait(10, Ignore Condition);
         Set Player Variable(Event Player, brig_ult, False);
         Destroy Effect(Player Variable(Event Player, brig_ult_ref));
-        Set Player Variable At Index(Event Player, move_modify, 2, 0);
-        Set Player Variable(Event Player, temp_player_6, Event Player);
-        Set Player Variable(Player Variable(Event Player, temp_player_6), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 3));
-            Modify Player Variable(Player Variable(Event Player, temp_player_6), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_6), move_modify), Global Variable(temp_count)));
-            Modify Global Variable(temp_count, Add, 1);
-        End;
-        Set Player Variable(Player Variable(Event Player, temp_player_6), move_var, Player Variable(Player Variable(Event Player, temp_player_6), array_sum_temp));
-        Set Move Speed(Event Player, Player Variable(Event Player, move_var));
+        Set Move Speed(Event Player, 100);
     }
 }
 
@@ -1199,44 +1212,6 @@ rule("Brig: Remove Repair Pack Health")
     }
 }
 
-rule("Brig: Check Shield Bash Range")
-{
-
-    event
-    {
-        Ongoing - Each Player;
-        All;
-        Brigitte;
-    }
-
-    conditions
-    {
-        Is Firing Secondary(Event Player) == True;
-        Not(Is Firing Primary(Event Player)) == True;
-    }
-
-    // Action count: 16
-    actions
-    {
-        Set Player Variable(Event Player, temp_range, 5);
-        If(Not(Is In Line Of Sight(Add(Eye Position(Event Player), Facing Direction Of(Event Player)), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), Vector(Player Variable(Event Player, temp_range), Empty Array, Player Variable(Event Player, temp_range)))), Enemy Barriers Block LOS)));
-            Set Global Variable(temp_count, 1);
-            While(Compare(Global Variable(temp_count), <, 12));
-                If(Is In Line Of Sight(Add(Eye Position(Event Player), Facing Direction Of(Event Player)), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), Vector(Player Variable(Event Player, temp_range), Empty Array, Player Variable(Event Player, temp_range)))), Enemy Barriers Block LOS));
-                    Modify Player Variable(Event Player, temp_range, Add, Divide(2.5, Global Variable(temp_count)));
-                Else;
-                    Modify Player Variable(Event Player, temp_range, Subtract, Divide(2.5, Global Variable(temp_count)));
-                End;
-                Modify Global Variable(temp_count, Add, 1);
-            End;
-        End;
-        Set Player Variable(Event Player, brig_shield_range, Player Variable(Event Player, temp_range));
-        Set Player Variable(Event Player, brig_enemy_range, Distance Between(Event Player, Closest Player To(Position Of(Event Player), Opposite Team Of(Team Of(Event Player)))));
-        Wait(0.25, Ignore Condition);
-        Loop If Condition Is True;
-    }
-}
-
 rule("Brig: Used Shield Bash")
 {
 
@@ -1253,26 +1228,10 @@ rule("Brig: Used Shield Bash")
         Is Firing Primary(Event Player) == True;
     }
 
-    // Action count: 20
+    // Action count: 4
     actions
     {
         Set Move Speed(Event Player, 50);
-        Set Player Variable(Event Player, temp_range_0, 5);
-        If(Not(Is In Line Of Sight(Add(Eye Position(Event Player), Facing Direction Of(Event Player)), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), Vector(Player Variable(Event Player, temp_range_0), Empty Array, Player Variable(Event Player, temp_range_0)))), Enemy Barriers Block LOS)));
-            Set Global Variable(temp_count, 1);
-            While(Compare(Global Variable(temp_count), <, 12));
-                If(Is In Line Of Sight(Add(Eye Position(Event Player), Facing Direction Of(Event Player)), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), Vector(Player Variable(Event Player, temp_range_0), Empty Array, Player Variable(Event Player, temp_range_0)))), Enemy Barriers Block LOS));
-                    Modify Player Variable(Event Player, temp_range_0, Add, Divide(2.5, Global Variable(temp_count)));
-                Else;
-                    Modify Player Variable(Event Player, temp_range_0, Subtract, Divide(2.5, Global Variable(temp_count)));
-                End;
-                Modify Global Variable(temp_count, Add, 1);
-            End;
-        End;
-        Set Player Variable(Event Player, brig_shield_range, Player Variable(Event Player, temp_range_0));
-        Set Player Variable(Event Player, brig_enemy_range, Distance Between(Event Player, Closest Player To(Position Of(Event Player), Opposite Team Of(Team Of(Event Player)))));
-        If(Compare(Player Variable(Event Player, brig_shield_range), <, 2.25));
-        End;
         Wait(0.0166666667, Ignore Condition);
         Loop If Condition Is True;
         Set Move Speed(Event Player, 100);
@@ -1295,14 +1254,10 @@ rule("Brig: Shield Bash Stun")
         Event Ability == Button(Primary Fire);
     }
 
-    // Action count: 5
+    // Action count: 1
     actions
     {
-        If(Compare(Player Variable(Event Player, brig_shield_range), >, Player Variable(Event Player, brig_enemy_range)));
-            Set Status(Victim, Attacker, Stunned, 0.9);
-        Else;
-            Heal(Victim, Null, Divide(Event Damage, Player Variable(Victim, healing_recieved)));
-        End;
+        Set Status(Victim, Attacker, Stunned, 0.9);
     }
 }
 
@@ -1460,20 +1415,11 @@ rule("Dva: Movement Speed Penalty 1")
         Is In Alternate Form(Event Player) == False;
     }
 
-    // Action count: 12
+    // Action count: 3
     actions
     {
         If(Compare(Is Using Ability 1(Event Player), ==, False));
-            Set Player Variable At Index(Event Player, move_modify, 0, -16.67);
-            Set Player Variable(Event Player, temp_player_7, Event Player);
-            Set Player Variable(Player Variable(Event Player, temp_player_7), array_sum_temp, 100);
-            Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 3));
-                Modify Player Variable(Player Variable(Event Player, temp_player_7), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_7), move_modify), Global Variable(temp_count)));
-                Modify Global Variable(temp_count, Add, 1);
-            End;
-            Set Player Variable(Player Variable(Event Player, temp_player_7), move_var, Player Variable(Player Variable(Event Player, temp_player_7), array_sum_temp));
-            Set Move Speed(Event Player, Player Variable(Event Player, move_var));
+            Set Move Speed(Event Player, 83.33);
         End;
     }
 }
@@ -1494,19 +1440,10 @@ rule("Dva: Movement Speed Penalty 2")
         Is In Alternate Form(Event Player) == False;
     }
 
-    // Action count: 10
+    // Action count: 1
     actions
     {
-        Set Player Variable At Index(Event Player, move_modify, 0, 0);
-        Set Player Variable(Event Player, temp_player_8, Event Player);
-        Set Player Variable(Player Variable(Event Player, temp_player_8), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 3));
-            Modify Player Variable(Player Variable(Event Player, temp_player_8), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_8), move_modify), Global Variable(temp_count)));
-            Modify Global Variable(temp_count, Add, 1);
-        End;
-        Set Player Variable(Player Variable(Event Player, temp_player_8), move_var, Player Variable(Player Variable(Event Player, temp_player_8), array_sum_temp));
-        Set Move Speed(Event Player, Player Variable(Event Player, move_var));
+        Set Move Speed(Event Player, 100);
     }
 }
 
@@ -1690,6 +1627,29 @@ rule("Lucio: Increased Boop Range")
     }
 }
 
+rule("Lucio: Increase Healing From Others")
+{
+
+    event
+    {
+        Player Received Healing;
+        All;
+        Lúcio;
+    }
+
+    conditions
+    {
+        Healer != Event Player;
+        Event Ability != Null;
+    }
+
+    // Action count: 1
+    actions
+    {
+        Heal(Healer, Healee, Multiply(Event Healing, 0.25));
+    }
+}
+
 rule("Moira: More Self Heal")
 {
 
@@ -1788,7 +1748,7 @@ rule("Moira: Cant Fade while ulting")
     }
 }
 
-rule("Moira: Cant jump in Fade")
+rule("Moira: Cant super jump in Fade")
 {
 
     event
@@ -1811,9 +1771,9 @@ rule("Moira: Cant jump in Fade")
         Set Healing Received(Event Player, Multiply(Player Variable(Event Player, healing_recieved), 100));
         Set Player Variable(Event Player, anti_nade_effect, Null);
         Set Player Variable(Player Variable(Event Player, Discorder), discord_timer, 3);
-        Disallow Button(Event Player, Button(Jump));
+        Set Jump Vertical Speed(Event Player, 50);
         Wait Until(Compare(Is Using Ability 1(Event Player), ==, False), 10);
-        Allow Button(Event Player, Button(Jump));
+        Set Jump Vertical Speed(Event Player, 50);
     }
 }
 
@@ -1856,30 +1816,12 @@ rule("Rein: Movement Speed Penalty")
         Is Firing Secondary(Event Player) == True;
     }
 
-    // Action count: 21
+    // Action count: 3
     actions
     {
-        Set Player Variable At Index(Event Player, move_modify, 0, -35);
-        Set Player Variable(Event Player, temp_player_9, Event Player);
-        Set Player Variable(Player Variable(Event Player, temp_player_9), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 3));
-            Modify Player Variable(Player Variable(Event Player, temp_player_9), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_9), move_modify), Global Variable(temp_count)));
-            Modify Global Variable(temp_count, Add, 1);
-        End;
-        Set Player Variable(Player Variable(Event Player, temp_player_9), move_var, Player Variable(Player Variable(Event Player, temp_player_9), array_sum_temp));
-        Set Move Speed(Event Player, Player Variable(Event Player, move_var));
+        Set Move Speed(Event Player, 75);
         Wait Until(Compare(Is Firing Secondary(Event Player), ==, False), 100);
-        Set Player Variable At Index(Event Player, move_modify, 0, 0);
-        Set Player Variable(Event Player, temp_player_10, Event Player);
-        Set Player Variable(Player Variable(Event Player, temp_player_10), array_sum_temp, 100);
-        Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 3));
-            Modify Player Variable(Player Variable(Event Player, temp_player_10), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_10), move_modify), Global Variable(temp_count)));
-            Modify Global Variable(temp_count, Add, 1);
-        End;
-        Set Player Variable(Player Variable(Event Player, temp_player_10), move_var, Player Variable(Player Variable(Event Player, temp_player_10), array_sum_temp));
-        Set Move Speed(Event Player, Player Variable(Event Player, move_var));
+        Set Move Speed(Event Player, 100);
     }
 }
 
@@ -2250,16 +2192,16 @@ rule("Zen: Discord Applied")
     {
         Set Player Variable(Player Variable(Event Player, DiscordTarget), Discorder, Null);
         Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 0);
-        Set Player Variable(Event Player, temp_player_11, Player Variable(Event Player, DiscordTarget));
-        Set Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp, 100);
+        Set Player Variable(Event Player, temp_player_7, Player Variable(Event Player, DiscordTarget));
+        Set Player Variable(Player Variable(Event Player, temp_player_7), array_sum_temp, 100);
         Set Global Variable(temp_count, 0);
-        While(Compare(Global Variable(temp_count), <, 4));
-            Modify Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_11), dam_modify), Global Variable(temp_count)));
+        While(Compare(Global Variable(temp_count), <, 2));
+            Modify Player Variable(Player Variable(Event Player, temp_player_7), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_7), dam_modify), Global Variable(temp_count)));
             Wait(0.0166666667, Ignore Condition);
             Modify Global Variable(temp_count, Add, 1);
         End;
-        Set Player Variable(Player Variable(Event Player, temp_player_11), damage_taken, Player Variable(Player Variable(Event Player, temp_player_11), array_sum_temp));
-        Set Player Variable(Player Variable(Event Player, temp_player_11), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_11), damage_taken), 100));
+        Set Player Variable(Player Variable(Event Player, temp_player_7), damage_taken, Player Variable(Player Variable(Event Player, temp_player_7), array_sum_temp));
+        Set Player Variable(Player Variable(Event Player, temp_player_7), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_7), damage_taken), 100));
         Set Damage Received(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
         Destroy Effect(Player Variable(Player Variable(Event Player, DiscordTarget), zen_discord_reference));
         Set Player Variable(Event Player, DiscordTarget, Null);
@@ -2296,16 +2238,16 @@ rule("Zen: Discord Damage")
             Set Player Variable(Event Player, DiscordTarget, Victim);
             Set Player Variable(Player Variable(Event Player, DiscordTarget), Discorder, Attacker);
             Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 3);
-            Set Player Variable(Event Player, temp_player_12, Player Variable(Event Player, DiscordTarget));
-            Set Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp, 100);
+            Set Player Variable(Event Player, temp_player_8, Player Variable(Event Player, DiscordTarget));
+            Set Player Variable(Player Variable(Event Player, temp_player_8), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
-                Modify Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_12), dam_modify), Global Variable(temp_count)));
+            While(Compare(Global Variable(temp_count), <, 2));
+                Modify Player Variable(Player Variable(Event Player, temp_player_8), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_8), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
             End;
-            Set Player Variable(Player Variable(Event Player, temp_player_12), damage_taken, Player Variable(Player Variable(Event Player, temp_player_12), array_sum_temp));
-            Set Player Variable(Player Variable(Event Player, temp_player_12), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_12), damage_taken), 100));
+            Set Player Variable(Player Variable(Event Player, temp_player_8), damage_taken, Player Variable(Player Variable(Event Player, temp_player_8), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_8), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_8), damage_taken), 100));
             Set Damage Received(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
             Create Effect(All Players(All Teams), Bad Aura, Color(Purple), Victim, Divide(Player Variable(Victim, effect_scale), 2), Position And Radius);
             Set Player Variable(Player Variable(Event Player, DiscordTarget), zen_discord_reference, Last Created Entity);
@@ -2341,32 +2283,32 @@ rule("Zen: Discord timer")
         If(Compare(Player Variable(Event Player, discord_timer), >=, 3));
             Set Player Variable(Player Variable(Event Player, DiscordTarget), Discorder, Null);
             Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 0);
-            Set Player Variable(Event Player, temp_player_13, Player Variable(Event Player, DiscordTarget));
-            Set Player Variable(Player Variable(Event Player, temp_player_13), array_sum_temp, 100);
+            Set Player Variable(Event Player, temp_player_9, Player Variable(Event Player, DiscordTarget));
+            Set Player Variable(Player Variable(Event Player, temp_player_9), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
-                Modify Player Variable(Player Variable(Event Player, temp_player_13), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_13), dam_modify), Global Variable(temp_count)));
+            While(Compare(Global Variable(temp_count), <, 2));
+                Modify Player Variable(Player Variable(Event Player, temp_player_9), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_9), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
             End;
-            Set Player Variable(Player Variable(Event Player, temp_player_13), damage_taken, Player Variable(Player Variable(Event Player, temp_player_13), array_sum_temp));
-            Set Player Variable(Player Variable(Event Player, temp_player_13), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_13), damage_taken), 100));
+            Set Player Variable(Player Variable(Event Player, temp_player_9), damage_taken, Player Variable(Player Variable(Event Player, temp_player_9), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_9), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_9), damage_taken), 100));
             Set Damage Received(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
             Destroy Effect(Player Variable(Player Variable(Event Player, DiscordTarget), zen_discord_reference));
             Set Player Variable(Event Player, DiscordTarget, Null);
             Set Player Variable(Event Player, discord_timer, 0);
             Else If(Compare(Player Variable(Event Player, discord_timer), >=, 2));
             Set Player Variable At Index(Player Variable(Event Player, DiscordTarget), dam_modify, 0, 30);
-            Set Player Variable(Event Player, temp_player_14, Player Variable(Event Player, DiscordTarget));
-            Set Player Variable(Player Variable(Event Player, temp_player_14), array_sum_temp, 100);
+            Set Player Variable(Event Player, temp_player_10, Player Variable(Event Player, DiscordTarget));
+            Set Player Variable(Player Variable(Event Player, temp_player_10), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
-            While(Compare(Global Variable(temp_count), <, 4));
-                Modify Player Variable(Player Variable(Event Player, temp_player_14), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_14), dam_modify), Global Variable(temp_count)));
+            While(Compare(Global Variable(temp_count), <, 2));
+                Modify Player Variable(Player Variable(Event Player, temp_player_10), array_sum_temp, Add, Value In Array(Player Variable(Player Variable(Event Player, temp_player_10), dam_modify), Global Variable(temp_count)));
                 Wait(0.0166666667, Ignore Condition);
                 Modify Global Variable(temp_count, Add, 1);
             End;
-            Set Player Variable(Player Variable(Event Player, temp_player_14), damage_taken, Player Variable(Player Variable(Event Player, temp_player_14), array_sum_temp));
-            Set Player Variable(Player Variable(Event Player, temp_player_14), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_14), damage_taken), 100));
+            Set Player Variable(Player Variable(Event Player, temp_player_10), damage_taken, Player Variable(Player Variable(Event Player, temp_player_10), array_sum_temp));
+            Set Player Variable(Player Variable(Event Player, temp_player_10), damage_float, Divide(Player Variable(Player Variable(Event Player, temp_player_10), damage_taken), 100));
             Set Damage Received(Player Variable(Event Player, DiscordTarget), Player Variable(Player Variable(Event Player, DiscordTarget), damage_taken));
         End;
         Wait(0.25, Ignore Condition);

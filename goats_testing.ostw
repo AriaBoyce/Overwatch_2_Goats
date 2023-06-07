@@ -80,7 +80,7 @@ rule:"Disable Inspector"
 Number sum_array_damage(Player temp_player)
 {
 	temp_player.array_sum_temp = 100;
-	for(temp_count = 0; temp_count < 4; temp_count++)
+	for(temp_count = 0; temp_count < 2; temp_count++)
 	{
 		temp_player.array_sum_temp += temp_player.dam_modify[temp_count];
 		Wait(1/60);
@@ -172,7 +172,7 @@ void default_setup()
     {
         zarya_setup();
     }   
-	SmallMessage(EventPlayer(),"Patch Version: 2.0.9 6/5/2023");
+	SmallMessage(EventPlayer(),"Patch Version: 2.0.11 6/7/2023");
 }
 
 void ana_setup()
@@ -196,6 +196,7 @@ void brig_setup()
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
 	DestroyHudText(brig_hud_ref);
 	damage_float = 1.0;
+	healing_dealt = 100;
 	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 	//CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",brig_shield_range]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
@@ -216,6 +217,7 @@ void lucio_setup()
 	effect_scale = 0.5;
 	role = 1;
 	damage_float = 1.0;
+	healing_dealt = 100;
 }
 void rein_setup()
 {
@@ -335,6 +337,12 @@ Event.OnDeath
 	DestroyEffect(zen_discord_reference);
 	Discorder.discord_timer = 3;
 	discord_timer = 3;
+	dam_modify[0] = 0;
+	sum_array_damage(EventPlayer());
+	SetDamageReceived(EventPlayer(),damage_taken);
+	DestroyEffect(zen_discord_reference);
+	Wait(1);
+	Discorder.DiscordTarget = null;
 }
 rule:"Increased Knockback"
 Event.OngoingPlayer
@@ -427,9 +435,17 @@ if(IsBetweenRounds() == true)
 	ult_charge = 0;
 	SetAbility1Enabled(EventPlayer(),true);
 	SetAbility2Enabled(EventPlayer(),true);
+	DestroyAllEffects();
+	brig_ult = false;
+	brig_ult_armor_amount = 0;
 	Wait(10);
+	DestroyAllEffects();
+	dam_modify[0] = 0;
+	sum_array_damage(EventPlayer());
+	SetDamageReceived(EventPlayer(),damage_taken);
 	SetAbility1Enabled(EventPlayer(),true);
 	SetAbility2Enabled(EventPlayer(),true);
+	DestroyAllEffects();
 }
 
 //if a support has less hp, deal a tiny bit of damage just before the support passive kicks in so they dont regen health
@@ -630,11 +646,10 @@ if(IsButtonHeld(EventPlayer(),Button.Ultimate))
 if(ult_charge >= ult_charge_max-1)
 {
 	BigMessage(AllPlayers(OppositeTeamOf(TeamOf(EventPlayer()))),"RAID BOSS INCOMING");
+	BigMessage(AllPlayers(TeamOf(EventPlayer())),"RALLY TO ME");
 	PlayEffect(AllPlayers(),PlayEffect.BuffExplosionSound,Color.White,EventPlayer(),100);
 	//raise brigs speed during ult
-	move_modify[2] = 30;
-	sum_array_speed(EventPlayer());
-	SetMoveSpeed(EventPlayer(),move_var);
+	SetMoveSpeed(EventPlayer(),130);
 	//manually create effects
 	ult_charge = 0;
 	brig_ult = true;
@@ -642,9 +657,7 @@ if(ult_charge >= ult_charge_max-1)
 	Wait(10);
 	brig_ult = false;
 	DestroyEffect(brig_ult_ref);
-	move_modify[2] = 0;
-	sum_array_speed(EventPlayer());
-	SetMoveSpeed(EventPlayer(),move_var);
+	SetMoveSpeed(EventPlayer(),100);
 }
 
 rule:"Brig: Ult Armor Gen"
@@ -745,6 +758,7 @@ if(armor_pack_ref != null)
 	armor_pack_ref = null;
 }
 
+/*
 rule: "Brig: Check Shield Bash Range"
 Event.OngoingPlayer
 Player.Brigitte
@@ -771,6 +785,7 @@ if(!IsFiringPrimary(EventPlayer()))
 	Wait(1/4);
 	LoopIfConditionIsTrue();
 }
+*/
 rule: "Brig: Used Shield Bash"
 Event.OngoingPlayer
 Player.Brigitte
@@ -779,6 +794,7 @@ if(IsFiringPrimary(EventPlayer()))
 {
 	//change this to adjust shield bash distance
 	SetMoveSpeed(EventPlayer(),50);
+	/*
 	define temp_range = 5;
 	if(!IsInLineOfSight(EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer()),EyePosition(EventPlayer())+FacingDirectionOf(EventPlayer())*Vector(temp_range,0,temp_range),BarrierLOS.EnemyBarriersBlock))
 	{
@@ -800,6 +816,7 @@ if(IsFiringPrimary(EventPlayer()))
 	{
 		//SetStatus(EventPlayer(),null,Status.Stunned,0.01);
 	}
+	*/
 	Wait(1/60);
 	LoopIfConditionIsTrue();
 	SetMoveSpeed(EventPlayer(),100);
@@ -811,6 +828,8 @@ Player.Brigitte
 if(IsFiringSecondary())
 if(EventAbility() == Button.PrimaryFire)
 {
+	SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
+	/*
 	//if she damages with shield, give stun effect
 	if(brig_shield_range > brig_enemy_range)
 	{
@@ -820,7 +839,7 @@ if(EventAbility() == Button.PrimaryFire)
 	{
 		Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
 	}
-
+	*/
 }
 
 rule:"Brig: Reduce Armor From Damage"
@@ -893,9 +912,7 @@ if(IsInAlternateForm() == false)
 {
 	if(IsUsingAbility1(EventPlayer()) == false)
 	{
-		move_modify[0] = -16.67;
-		sum_array_speed(EventPlayer());
-		SetMoveSpeed(EventPlayer(),move_var);
+		SetMoveSpeed(EventPlayer(),83.33);
 	}
 	//goal movespeed of 2.75 m/s
 	//50%
@@ -909,9 +926,7 @@ if(IsInAlternateForm() == false)
 {
 	//goal movespeed of 2.75 m/s
 	//50%
-	move_modify[0] = 0;
-	sum_array_speed(EventPlayer());
-	SetMoveSpeed(EventPlayer(),move_var);
+	SetMoveSpeed(EventPlayer(),100);
 }
 
 rule: "Dva: Boosters Damage"
@@ -1004,6 +1019,14 @@ if(EventAbility() == Button.SecondaryFire)
 	Victim().booped = 1;
 }
 
+rule: "Lucio: Increase Healing From Others"
+Event.OnHealingTaken
+Player.Lucio
+if(Healer() != EventPlayer())
+if(EventAbility() != null)
+{
+	Heal(Healer(),Healee(),EventHealing()*0.25);
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Moira
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1062,7 +1085,7 @@ if(IsUsingUltimate())
 	SetAbility1Enabled(EventPlayer(),true);
 }
 
-rule:"Moira: Cant jump in Fade"
+rule:"Moira: Cant super jump in Fade"
 Event.OngoingPlayer
 Player.Moira
 if(IsUsingAbility1())
@@ -1073,9 +1096,9 @@ if(IsUsingAbility1())
 	anti_nade_effect = null;
 
 	Discorder.discord_timer = 3;//clear discord
-	DisallowButton(EventPlayer(),Button.Jump);
+	SetJumpVerticalSpeed(EventPlayer(),50);
 	WaitUntil(IsUsingAbility1() == false,10);
-	AllowButton(EventPlayer(),Button.Jump);
+	SetJumpVerticalSpeed(EventPlayer(),50);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1100,14 +1123,10 @@ if(IsFiringSecondary(EventPlayer()))
 	
 	//goal movespeed of 2.75 m/s
 	//50%
-	move_modify[0] = -35;
-	sum_array_speed(EventPlayer());
-	SetMoveSpeed(EventPlayer(),move_var);
+	SetMoveSpeed(EventPlayer(),75);
 	//lower speed when holding shield, wait until its put down
 	WaitUntil(IsFiringSecondary() == false,100);
-	move_modify[0] = 0;
-	sum_array_speed(EventPlayer());
-	SetMoveSpeed(EventPlayer(),move_var);
+	SetMoveSpeed(EventPlayer(),100);
 }
 
 rule: "Rein: Hammer Damage"
