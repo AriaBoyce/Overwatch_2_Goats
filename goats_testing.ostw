@@ -185,7 +185,7 @@ void default_setup()
     {
         zarya_setup();
     }   
-	SmallMessage(EventPlayer(),"Patch Version: 2.0.11.2 6/7/2023");
+	SmallMessage(EventPlayer(),"Patch Version: 2.0.12 6/8/2023");
 }
 
 void ana_setup()
@@ -303,7 +303,7 @@ void zen_setup()
 	current_shield_health = 150;
 	role = 1;
 	SetDamageDealt(EventPlayer(), damage_var);
-	zen_discord_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                    ","                                                                                                                 ",HeroOf( DiscordTarget)]),Location.Left,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
+	//zen_discord_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                    ","                                                                                                                 ",HeroOf( DiscordTarget)]),Location.Left,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //General
@@ -319,7 +319,7 @@ Event.OngoingGlobal
 	{
 		server_stress_time = 0;
 	}
-	if(server_stress_time == 15)
+	if(server_stress_time == 6)
 	{
 		SmallMessage(AllPlayers(),"Anti Crash Slow Mode");
 		SetSlowMotion(10);
@@ -328,7 +328,7 @@ Event.OngoingGlobal
 	{
 		SetSlowMotion(100);
 	}
-	Wait(1/5);
+	Wait(1/2);
 	Loop();
 }
 
@@ -385,6 +385,8 @@ if(HeroOf(EventPlayer()) != Hero.Lucio)
 		SetHealingReceived(EventPlayer(),healing_recieved*100);
 	}
 	SetHealingDealt(EventPlayer(),healing_dealt);
+	sum_array_damage(EventPlayer());//reset damage taken on occassion to try and fix random double hp people not taking double damage
+	SetDamageReceived(EventPlayer(),damage_taken);
 	Wait(5);
 	Loop();
 }
@@ -395,9 +397,9 @@ Player.Lucio
 {
 	if(anti_nade_check == 0)
 	{
-		SetHealingReceived(EventPlayer(),healing_recieved*100);
+		SetHealingReceived(EventPlayer(),80);
 	}
-	SetHealingDealt(EventPlayer(),64);
+	SetHealingDealt(EventPlayer(),100);
 	Wait(5);
 	Loop();
 }
@@ -458,6 +460,7 @@ if(IsBetweenRounds() == true)
 	SetDamageReceived(EventPlayer(),damage_taken);
 	SetAbility1Enabled(EventPlayer(),true);
 	SetAbility2Enabled(EventPlayer(),true);
+	SetJumpEnabled(EventPlayer(),true);
 	DestroyAllEffects();
 }
 
@@ -562,14 +565,9 @@ Player.Ana
 if(EventAbility() == Button.Ability2)
 {
 	//Set healing recieved to 0, and create an extra effect that will last for new anti nade duration
-	DestroyEffect( Victim().anti_nade_effect);
     Victim().anti_nade_check = 1;
-    Victim().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Purple, Victim(), effect_scale, EffectRev.VisibleToPositionAndRadius);
-    SetHealingReceived(Victim(), 0);
-	Wait(4);
-	DestroyEffect( Victim().anti_nade_effect);
+	Wait(3.5);
 	Victim().anti_nade_check = 0;
-	SetHealingReceived(Victim(), Victim().healing_recieved*100);
 	anti_nade_effect = null;
 }
 
@@ -580,22 +578,6 @@ Player.Ana
 if(EventAbility() == Button.Ability2)
 {
 	Heal(Healee(),Healer(),ana_healing_nade_healing);
-	if(Healee().anti_nade_effect == 0)
-	{
-		DestroyEffect( Healee().anti_nade_effect);
-		Healee().anti_nade_effect = CreateEffect(AllPlayers(), Effect.Ring, Color.Yellow, Healee(), effect_scale, EffectRev.VisibleToPositionAndRadius);
-	}
-	Wait(3.5);
-	if(Healee().anti_nade_check == 0)
-	{
-		SetHealingReceived(Healee(),healing_recieved*150);
-	}
-	Wait(0.5);
-	if(Healee().anti_nade_check == 0)
-	{
-		SetHealingReceived(Healee(),healing_recieved*100);
-	}
-	DestroyEffect( Healee().anti_nade_effect);
 }
 
 rule: "Ana Sleep Dart Duration"
@@ -750,7 +732,7 @@ if (HeroOf(Healee()) == Hero.Lucio)
 	}
 	else
 	{
-		workshopHeal(Healee(), Healer(), temp_health / 0.64);
+		workshopHeal(Healee(), Healer(), temp_health / 0.80);
 	}
 	if (heal_amount > 75)
 	{
@@ -830,8 +812,7 @@ if(IsFiringPrimary(EventPlayer()))
 		//SetStatus(EventPlayer(),null,Status.Stunned,0.01);
 	}
 	*/
-	Wait(1/60);
-	LoopIfConditionIsTrue();
+	Wait(1/4);
 	SetMoveSpeed(EventPlayer(),100);
 }
 
@@ -917,6 +898,7 @@ if(EventAbility() == Button.Ability1)
 	Victim().booped = 1;
 }
 
+/*
 rule: "Dva: Movement Speed Penalty 1"
 Event.OngoingPlayer
 Player.Dva
@@ -941,7 +923,7 @@ if(IsInAlternateForm() == false)
 	//50%
 	SetMoveSpeed(EventPlayer(),100);
 }
-
+*/
 rule: "Dva: Boosters Damage"
 Event.OnDamageDealt
 Player.Dva
@@ -963,6 +945,7 @@ if(IsInAlternateForm() == true)
 	SetDamageDealt(EventPlayer(), 100);
 }
 
+/*
 rule: "Dva: Melee Cancels Boosters"
 Event.OngoingPlayer
 Player.Dva
@@ -971,7 +954,7 @@ if (IsButtonHeld(EventPlayer(), Button.Melee) == true)
 {
 	PressButton(EventPlayer(), Button.Ability1);
 }
-
+*/
 rule: "Dva: Baby Health"
 Event.OngoingPlayer
 Player.Dva
@@ -1057,7 +1040,7 @@ rule:"Moira: Resource"
 Event.OngoingPlayer
 Player.Moira
 {
-    define TICK : 30;
+    define TICK : 15;
 	//manually track resource, her meter used to last alot longer but refilled much slower
 	if(IsFiringPrimary(EventPlayer()))
 	{
@@ -1309,7 +1292,7 @@ if(EventAbility() == Button.Melee)
 	Wait(1/20);
 	ApplyImpulse(Victim(),DirectionTowards(PositionOf(Victim()),PositionOf(Victim())+VelocityOf(Victim()))*Vector(-1,0,-1),SpeedOf(Victim())*0.9,Relative.ToWorld,ContraryMotion.Incorporate);
 }
-
+/*
 rule: "Zen: Discord Applied"
 Event.OngoingPlayer
 Player.Zenyatta
@@ -1387,6 +1370,7 @@ if(DiscordTarget != null)
     Wait(1/4);
     LoopIfConditionIsTrue();
 }
+*/
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Light Weight Scrim Code
