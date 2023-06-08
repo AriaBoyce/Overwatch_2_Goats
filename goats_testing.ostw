@@ -1040,7 +1040,7 @@ rule:"Moira: Resource"
 Event.OngoingPlayer
 Player.Moira
 {
-    define TICK : 15;
+    define TICK : 5;
 	//manually track resource, her meter used to last alot longer but refilled much slower
 	if(IsFiringPrimary(EventPlayer()))
 	{
@@ -1292,85 +1292,84 @@ if(EventAbility() == Button.Melee)
 	Wait(1/20);
 	ApplyImpulse(Victim(),DirectionTowards(PositionOf(Victim()),PositionOf(Victim())+VelocityOf(Victim()))*Vector(-1,0,-1),SpeedOf(Victim())*0.9,Relative.ToWorld,ContraryMotion.Incorporate);
 }
-/*
-rule: "Zen: Discord Applied"
-Event.OngoingPlayer
-Player.Zenyatta
-if(IsUsingAbility2())
-{
 
-	//clear old discord
-	DiscordTarget.Discorder = null;
-	DiscordTarget.dam_modify[0] = 0;
-	sum_array_damage(DiscordTarget);
-	SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
-	DestroyEffect(DiscordTarget.zen_discord_reference);
-	DiscordTarget = null;
+// rule: "Zen: Discord Applied"
+// Event.OngoingPlayer
+// Player.Zenyatta
+// if(IsUsingAbility2())
+// {
+
+// 	//clear old discord
+// 	DiscordTarget.Discorder = null;
+// 	DiscordTarget.dam_modify[0] = 0;
+// 	sum_array_damage(DiscordTarget);
+// 	SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+// 	DestroyEffect(DiscordTarget.zen_discord_reference);
+// 	DiscordTarget = null;
 	
-	define zen_los = AllPlayers(OppositeTeamOf(TeamOf(EventPlayer())));
-	zen_los = FilteredArray(zen_los,IsInLineOfSight(EventPlayer(),ArrayElement(),BarrierLOS.NoBarriersBlock));
-	for(define i = 0; i < 6; i++)
-	{
-		Damage(zen_los[i],EventPlayer(),(0.1 / zen_los[i].damage_float));
-	}
-}
+// 	define zen_los = AllLivingPlayers(OppositeTeamOf(TeamOf(EventPlayer())));
+// 	zen_los = FilteredArray(zen_los,IsInLineOfSight(EventPlayer(),ArrayElement(),BarrierLOS.NoBarriersBlock));
+// 	for(define i = 0; i < 6; i++)
+// 	{
+// 		Damage(zen_los[i],EventPlayer(),(0.1 / zen_los[i].damage_float));
+// 	}
+// }
 
-rule: "Zen: Discord Damage"
-Event.OnDamageDealt
-Player.Zenyatta
-if(EventDamage() < 1)
-{	
-	workshopHeal(Victim(),null,EventDamage()/Victim().healing_recieved);
-	if((EventDamage() > 0.07 && EventDamage() < 0.095) || EventDamage() > 0.105)
-	{
-		DiscordTarget = Victim();
-		DiscordTarget.Discorder = Attacker();
-		DiscordTarget.dam_modify[0] = 3;
-		sum_array_damage(DiscordTarget);
-		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
-		DiscordTarget.zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale/2,EffectRev.PositionAndRadius);
-	}
-}
-
-
-rule: "Zen: Discord timer"
-Event.OngoingPlayer
-Player.Zenyatta
-if(DiscordTarget != null)
-{
-	if(discord_timer < 3)
-	{
-		if(IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
-		{
-			discord_timer = 0;
-		}
-		else
-		{
-			discord_timer += 1/4;
-		}
-	}
+// rule: "Zen: Discord Damage"
+// Event.OnDamageDealt
+// Player.Zenyatta
+// if(EventDamage() < 1)
+// {	
+// 	workshopHeal(Victim(),null,EventDamage()/Victim().healing_recieved);
+// 	if((EventDamage() > 0.07 && EventDamage() < 0.095) || EventDamage() > 0.105)
+// 	{
+// 		DiscordTarget = Victim();
+// 		DiscordTarget.Discorder = Attacker();
+// 		DiscordTarget.dam_modify[0] = 3;
+// 		sum_array_damage(DiscordTarget);
+// 		SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+// 		DiscordTarget.zen_discord_reference = CreateEffect(AllPlayers(),Effect.BadAura,Color.Purple,Victim(),Victim().effect_scale/2,EffectRev.PositionAndRadius);
+// 	}
+// }
 
 
-    if(discord_timer >= 3)
-    {
-		DiscordTarget.Discorder = null;
-        DiscordTarget.dam_modify[0] = 0;
-        sum_array_damage(DiscordTarget);
-        SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
-        DestroyEffect(DiscordTarget.zen_discord_reference);
-        DiscordTarget = null;
-        discord_timer = 0;
-    }
-    else if (discord_timer >= 2)
-    {
-        DiscordTarget.dam_modify[0] = 30;
-        sum_array_damage(DiscordTarget);
-        SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
-    }
-    Wait(1/4);
-    LoopIfConditionIsTrue();
-}
-*/
+// rule: "Zen: Discord timer"
+// Event.OngoingPlayer
+// Player.Zenyatta
+// if(DiscordTarget != null)
+// {
+// 	if(discord_timer < 3)
+// 	{
+// 		if(IsInLineOfSight(EventPlayer(),DiscordTarget,BarrierLOS.NoBarriersBlock))
+// 		{
+// 			discord_timer = 0;
+// 		}
+// 		else
+// 		{
+// 			discord_timer += 1/4;
+// 		}
+// 	}
+
+
+//     if(discord_timer >= 3)
+//     {
+// 		DiscordTarget.Discorder = null;
+//         DiscordTarget.dam_modify[0] = 0;
+//         sum_array_damage(DiscordTarget);
+//         SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+//         DestroyEffect(DiscordTarget.zen_discord_reference);
+//         DiscordTarget = null;
+//         discord_timer = 0;
+//     }
+//     else if (discord_timer >= 2)
+//     {
+//         DiscordTarget.dam_modify[0] = 30;
+//         sum_array_damage(DiscordTarget);
+//         SetDamageReceived(DiscordTarget,DiscordTarget.damage_taken);
+//     }
+//     Wait(1/4);
+//     LoopIfConditionIsTrue();
+// }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Light Weight Scrim Code
