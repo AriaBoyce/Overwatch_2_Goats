@@ -172,7 +172,7 @@ void default_setup()
     {
         zarya_setup();
     }   
-	SmallMessage(EventPlayer(),"Patch Version: 2.0.11 6/7/2023");
+	SmallMessage(EventPlayer(),"Patch Version: 2.0.11.2 6/7/2023");
 }
 
 void ana_setup()
@@ -1098,7 +1098,7 @@ if(IsUsingAbility1())
 	Discorder.discord_timer = 3;//clear discord
 	SetJumpVerticalSpeed(EventPlayer(),50);
 	WaitUntil(IsUsingAbility1() == false,10);
-	SetJumpVerticalSpeed(EventPlayer(),50);
+	SetJumpVerticalSpeed(EventPlayer(),100);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

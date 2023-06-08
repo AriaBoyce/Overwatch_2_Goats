@@ -300,7 +300,7 @@ rule("Has Spawned Setup")
             Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}", Custom String("                                                                                                                      "), Custom String("{0}{1}", Custom String("                                                                                "), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up)), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Left, 1, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, zarya_hud_ref, Last Text ID);
         End;
-        Small Message(Event Player, Custom String("Patch Version: 2.0.10 6/6/2023"));
+        Small Message(Event Player, Custom String("Patch Version: 2.0.11.2 6/7/2023"));
     }
 }
 
@@ -541,7 +541,7 @@ rule("Check For Hero Swap")
             Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    {0}                                                                    {1}             {2}", Custom String("                                                                                                                      "), Custom String("{0}{1}", Custom String("                                                                                "), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_1), Up)), Round To Integer(Player Variable(Event Player, zarya_shield_cooldown_2), Up)), Left, 1, Color(White), Color(Black), Color(White), String, Visible Never);
             Set Player Variable(Event Player, zarya_hud_ref, Last Text ID);
         End;
-        Small Message(Event Player, Custom String("Patch Version: 2.0.10 6/6/2023"));
+        Small Message(Event Player, Custom String("Patch Version: 2.0.11.2 6/7/2023"));
     }
 }
 
@@ -1773,7 +1773,7 @@ rule("Moira: Cant super jump in Fade")
         Set Player Variable(Player Variable(Event Player, Discorder), discord_timer, 3);
         Set Jump Vertical Speed(Event Player, 50);
         Wait Until(Compare(Is Using Ability 1(Event Player), ==, False), 10);
-        Set Jump Vertical Speed(Event Player, 50);
+        Set Jump Vertical Speed(Event Player, 100);
     }
 }
 
