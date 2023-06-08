@@ -67,6 +67,19 @@ playervar define DiscordTarget;
 playervar define discord_timer;
 playervar define zen_discord_reference;
 playervar define Discorder;
+
+void workshopHeal(Player healee, Player healer, Number amount) "Nade-safe heal for workshop purposes"
+{
+    //@RunAs EventPlayer
+    if(anti_nade_check==1 && healer == null){ //if naded but workshop is trying to heal them
+        SetHealingReceived(healee,100); //we don't use the healing recived percentage because this is for exact values
+        Heal(healee,healer,amount);
+        SetHealingReceived(healee,0);
+    }else{ //not taking any chances.
+        Heal(healee,healer,amount);
+    }
+}
+
 rule:"Disable Inspector"
 {
 	DisableInspectorRecording();
@@ -390,7 +403,7 @@ Player.Lucio
 }
 
 //manually track ult charge for brig since she cant use default ult
-rule:"Ult Charge"
+rule:"Brig: Ult Charge"
 Event.OngoingPlayer
 Player.Brigitte
 if(IsUsingUltimate(EventPlayer()) == false)
@@ -456,7 +469,7 @@ if(role == 1)
 if(Health(EventPlayer()) < MaxHealth(EventPlayer()))
 if(is_asleep == false)
 {
-	Heal(EventPlayer(),null,0.01);
+	workshopHeal(EventPlayer(),null,0.01);
 	Damage(EventPlayer(),null,0.01);
 	Wait(1.46);
 	LoopIfConditionIsTrue();
@@ -540,7 +553,7 @@ Player.Ana
 if(EventAbility() == Button.PrimaryFire)
 {
 	//since her damage ticks so fast, heal a little bit of each tick to make up for the 5 extra damage she does
-    Heal(Victim(),null,EventDamage()*0.07);
+    workshopHeal(Victim(),null,EventDamage()*0.07);
 }
 
 rule: "Ana Anti Nade"
@@ -702,11 +715,11 @@ if (HeroOf(Healee()) != Hero.Lucio)
 	heal_amount -= temp_health/Healee().healing_recieved;
 	if (temp_health > 150)
 	{
-		Heal(Healee(), Healer(), 150);
+		workshopHeal(Healee(), Healer(), 150);
 	}
 	else
 	{
-		Heal(Healee(), Healer(), temp_health);
+		workshopHeal(Healee(), Healer(), temp_health);
 	}
 	if (heal_amount > 75)
 	{
@@ -733,11 +746,11 @@ if (HeroOf(Healee()) == Hero.Lucio)
 	heal_amount -= temp_health;
 	if (temp_health > 150)
 	{
-		Heal(Healee(), Healer(), 234);
+		workshopHeal(Healee(), Healer(), 234);
 	}
 	else
 	{
-		Heal(Healee(), Healer(), temp_health / 0.64);
+		workshopHeal(Healee(), Healer(), temp_health / 0.64);
 	}
 	if (heal_amount > 75)
 	{
@@ -837,7 +850,7 @@ if(EventAbility() == Button.PrimaryFire)
 	}
 	else
 	{
-		Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
+		workshopHeal(Victim(),null,EventDamage()/Victim().healing_recieved);
 	}
 	*/
 }
@@ -856,25 +869,25 @@ if(brig_ult_armor_amount > 0)
 	}
 }
 
+//Use live: inaccuracy is only in a 1sec vs 1.5 second cooldown
+// rule: "Brig: Activate Inspire Damage"
+// Event.OnDamageDealt
+// Player.Brigitte
+// {
+// 	brig_inspire = 1.5;
+// }
 
-rule: "Brig: Activate Inspire Damage"
-Event.OnDamageDealt
-Player.Brigitte
-{
-	brig_inspire = 1.5;
-}
-
-rule: "Brig: Create Inspire Healing"
-Event.OngoingPlayer
-Player.Brigitte
-if(brig_inspire > 0)
-{
-	time_since_damage = PlayersWithinRadius(PositionOf(EventPlayer()),20,TeamOf(EventPlayer()),RadiusLOS.SurfacesAndEnemyBarriers);
-	StopHealOverTime(time_since_damage.brig_inspire_ref);
-	time_since_damage.brig_inspire_ref = StartHealOverTime(time_since_damage,EventPlayer(),6,16);
-	Wait(1.5,WaitBehavior.AbortWhenFalse);
-	brig_inspire = 0;
-}
+// rule: "Brig: Create Inspire Healing"
+// Event.OngoingPlayer
+// Player.Brigitte
+// if(brig_inspire > 0)
+// {
+// 	time_since_damage = PlayersWithinRadius(PositionOf(EventPlayer()),20,TeamOf(EventPlayer()),RadiusLOS.SurfacesAndEnemyBarriers);
+// 	StopHealOverTime(time_since_damage.brig_inspire_ref);
+// 	time_since_damage.brig_inspire_ref = StartHealOverTime(time_since_damage,EventPlayer(),6,16);
+// 	Wait(1.5,WaitBehavior.AbortWhenFalse);
+// 	brig_inspire = 0;
+// }
 
 rule: "Brig: Raise Self Healing"
 Event.OnHealingTaken
@@ -882,7 +895,7 @@ Player.Brigitte
 if(Healer() == Healee())
 if(EventAbility() != null)
 {
-	Heal(Healee(),Healer(),EventHealing()*100);
+    Heal(Healee(),Healer(),EventHealing()*100); //dont use workshopHeal here
 }
 
 rule: "Reset on Round End"
@@ -935,7 +948,7 @@ Player.Dva
 if(EventAbility() == Button.Ability1)
 {
 	//heal 5 hp since damage is low enough its not likely to lead to a kill from the 5 health
-	Heal(Victim(), null, 5);
+	workshopHeal(Victim(), null, 5);
 }
 
 rule: "Dva: Reduce Remech Damage"
@@ -972,7 +985,7 @@ if (IsInAlternateForm(EventPlayer()) == true)
 	brig_ult_armor_amount = 0;
 	health_reference= AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 51, true, true);
 	//define temp_health = 150 - HealthOfType(EventPlayer(), HealthType.Health);
-	//Heal(EventPlayer(), null, temp_health);
+	//workshopHeal(EventPlayer(), null, temp_health);
 	//AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health, true, true);
 }
 
@@ -986,7 +999,7 @@ if (!IsInAlternateForm(EventPlayer()) == true)
 	Wait(0.033, WaitBehavior.IgnoreCondition);
 	SetMaxHealth(EventPlayer(), 66);
 	Wait(0.033, WaitBehavior.IgnoreCondition);
-	Heal(EventPlayer(), null, 1000);
+	workshopHeal(EventPlayer(), null, 1000);
 	define temp_health = 400 - MaxHealthOfType(EventPlayer(), HealthType.Health);
 	AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health, true, true);
 	health_reference = LastCreatedHealthPool();
@@ -1025,7 +1038,7 @@ Player.Lucio
 if(Healer() != EventPlayer())
 if(EventAbility() != null)
 {
-	Heal(Healer(),Healee(),EventHealing()*0.25);
+	Heal(Healer(),Healee(),EventHealing()*0.25);  //dont use workshopHeal here
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Moira
@@ -1037,23 +1050,24 @@ Player.Moira
 if(EventAbility() == Button.SecondaryFire)
 {
 	//increased self heal
-	Heal(Attacker(),Attacker(),1.1);
+	Heal(Attacker(),Attacker(),1.1);  //dont use workshopHeal here
 	Wait(1/6);
 }
 rule:"Moira: Resource"
 Event.OngoingPlayer
 Player.Moira
 {
+    define TICK : 30;
 	//manually track resource, her meter used to last alot longer but refilled much slower
 	if(IsFiringPrimary(EventPlayer()))
 	{
 		SetHealingDealt(EventPlayer(),114.3);
-		moira_resource -= 17/30;
+		moira_resource -= 17/TICK;
 	}
 	else
 	{
 		SetHealingDealt(EventPlayer(),100);
-		moira_resource += 3.744/30;
+		moira_resource += 3.744/TICK;
 	}
 	SetAbilityResource(EventPlayer(),Button.PrimaryFire,moira_resource);
 	//cap resource
@@ -1061,7 +1075,7 @@ Player.Moira
 	{
 		moira_resource = 100;
 	}
-	Wait(1/30);
+	Wait(1/TICK);
 	Loop();
 }
 
@@ -1198,12 +1212,12 @@ if(IsUsingUltimate())
 	RemoveHealthPoolFromPlayer(health_reference);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,1015.38,true,true);
 	Wait(1/60);
-	Heal(EventPlayer(),null,2000);
+	workshopHeal(EventPlayer(),null,2000);
 	Wait(10);
 	RemoveHealthPoolFromPlayer(health_reference);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,476.92,true,true);
 	//SetMaxHealth(EventPlayer(),100);
-	//Heal(EventPlayer(),null,1000);
+	//workshopHeal(EventPlayer(),null,1000);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1216,9 +1230,10 @@ Player.Zarya
 if(IsUsingAbility1(EventPlayer()))
 {
 	SetAbility1Enabled(EventPlayer(),false);
-	zarya_shield_cooldown_1 = 8;
-	ChaseVariableOverTime(zarya_shield_cooldown_1,0,8,TimeChaseReevaluation.DestinationAndDuration);
-	Wait(8);
+	
+    for(zarya_shield_cooldown_1 = 8; zarya_shield_cooldown_1 > 0; zarya_shield_cooldown_1--){
+        Wait(1);
+    }
 	SetAbility1Enabled(EventPlayer(),true);
 }
 
@@ -1228,9 +1243,9 @@ Player.Zarya
 if(IsUsingAbility2(EventPlayer()))
 {
 	SetAbility2Enabled(EventPlayer(),false);
-	zarya_shield_cooldown_2 = 8;
-	ChaseVariableOverTime(zarya_shield_cooldown_2,0,8,TimeChaseReevaluation.DestinationAndDuration);
-	Wait(8);
+    for(zarya_shield_cooldown_2 = 8; zarya_shield_cooldown_2 > 0; zarya_shield_cooldown_2--){
+        Wait(1);
+    }
 	SetAbility2Enabled(EventPlayer(),true);
 }
 
@@ -1254,7 +1269,7 @@ Event.OnDamageDealt
 Player.Zenyatta
 if(EventAbility() == Button.Melee)
 {
-	Heal(Victim(),null,15);
+	workshopHeal(Victim(),null,15);
 }
 
 rule: "Shield Health Regen"
@@ -1265,7 +1280,7 @@ if(current_shield_health < max_shield_health)
 	time_since_damage_shield += 1/2;
 	if(time_since_damage_shield >= 3)
 	{
-		Heal(EventPlayer(),null,Min(20/6,max_shield_health-current_shield_health));
+		workshopHeal(EventPlayer(),null,Min(20/6,max_shield_health-current_shield_health));
 		current_shield_health += Min(20/6,max_shield_health-current_shield_health);
 		if(current_shield_health > max_shield_health)
 		{
@@ -1322,7 +1337,7 @@ Event.OnDamageDealt
 Player.Zenyatta
 if(EventDamage() < 1)
 {	
-	Heal(Victim(),null,EventDamage()/Victim().healing_recieved);
+	workshopHeal(Victim(),null,EventDamage()/Victim().healing_recieved);
 	if((EventDamage() > 0.07 && EventDamage() < 0.095) || EventDamage() > 0.105)
 	{
 		DiscordTarget = Victim();
