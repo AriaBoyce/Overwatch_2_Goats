@@ -198,7 +198,7 @@ void ana_setup()
 
 void brig_setup()
 {
-	SetUltimateAbilityEnabled(EventPlayer(),false);
+	//SetUltimateAbilityEnabled(EventPlayer(),false);
 	role = 1;
 	effect_scale = 1.0;
 	ult_charge_max = 2550;
@@ -210,7 +210,7 @@ void brig_setup()
 	DestroyHudText(brig_hud_ref);
 	damage_float = 1.0;
 	healing_dealt = 100;
-	brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
+	//brig_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",RoundToInteger( EventPlayer().ult_charge/EventPlayer().ult_charge_max*100)]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 	//CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                                                 ","                                                              ",brig_shield_range]),Location.Left,0,Color.White,Color.Black,Color.White,HudTextRev.String,Spectators.VisibleNever);
 }
 
@@ -416,12 +416,10 @@ if(!IsBetweenRounds())
 	{
 		//if at max ult charge, no need to update for awhile until ult is used
 		ult_charge = ult_charge_max;
-		SetUltimateCharge(EventPlayer(),100);
 	}
-	SetUltimateCharge(EventPlayer(),ult_charge/ult_charge_max*100);
-	ult_charge += 1/3;//passive ult gain, higher = more, old value 1/10
-	Wait(1/10);
-	
+	ult_charge += 2/3;//passive ult gain, higher = more, old value 1/10
+	Wait(1/5);
+	SetUltimateCharge(EventPlayer(),Min(99,ult_charge/ult_charge_max*100));
 	Loop();
 }
 
@@ -638,7 +636,7 @@ rule: "Brig: Try and cancel ult"
 Event.OngoingPlayer
 Player.Brigitte
 if(IsButtonHeld(EventPlayer(),Button.Ultimate))
-if(ult_charge >= ult_charge_max-1)
+if(UltimateChargePercent(EventPlayer()) >= 99)
 {
 	BigMessage(AllPlayers(OppositeTeamOf(TeamOf(EventPlayer()))),"RAID BOSS INCOMING");
 	BigMessage(AllPlayers(TeamOf(EventPlayer())),"RALLY TO ME");

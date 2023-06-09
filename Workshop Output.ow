@@ -144,7 +144,7 @@ rule("Has Spawned Setup")
         Has Spawned(Event Player) == True;
     }
 
-    // Action count: 155
+    // Action count: 152
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -184,7 +184,6 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, ana_healing_nade_healing, 26.6666666667);
             Set Player Variable(Event Player, damage_float, 1);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Brigitte)));
-            Set Ultimate Ability Enabled(Event Player, False);
             Set Player Variable(Event Player, role, 1);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, ult_charge_max, 2550);
@@ -197,8 +196,6 @@ rule("Has Spawned Setup")
             Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
             Set Player Variable(Event Player, damage_float, 1);
             Set Player Variable(Event Player, healing_dealt, 100);
-            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                                                 "), Custom String("                                                              "), Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Left, 0, Color(White), Color(Black), Color(White), String, Visible Never);
-            Set Player Variable(Event Player, brig_hud_ref, Last Text ID);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Lúcio)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
@@ -383,7 +380,7 @@ rule("Check For Hero Swap")
         Hero Of(Event Player) != Hero(Soldier: 76);
     }
 
-    // Action count: 155
+    // Action count: 152
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -423,7 +420,6 @@ rule("Check For Hero Swap")
             Set Player Variable(Event Player, ana_healing_nade_healing, 26.6666666667);
             Set Player Variable(Event Player, damage_float, 1);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Brigitte)));
-            Set Ultimate Ability Enabled(Event Player, False);
             Set Player Variable(Event Player, role, 1);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, ult_charge_max, 2550);
@@ -436,8 +432,6 @@ rule("Check For Hero Swap")
             Destroy HUD Text(Player Variable(Event Player, brig_hud_ref));
             Set Player Variable(Event Player, damage_float, 1);
             Set Player Variable(Event Player, healing_dealt, 100);
-            Create HUD Text(Event Player, Null, Null, Custom String("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}", Custom String("                                                                                                                 "), Custom String("                                                              "), Round To Integer(Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100), Up)), Left, 0, Color(White), Color(Black), Color(White), String, Visible Never);
-            Set Player Variable(Event Player, brig_hud_ref, Last Text ID);
             Else If(Compare(Hero Of(Event Player), ==, Hero(Lúcio)));
             Set Player Variable(Event Player, effect_scale, 0.5);
             Set Player Variable(Event Player, role, 1);
@@ -621,16 +615,15 @@ rule("Brig: Ult Charge")
         Not(Is Between Rounds) == True;
     }
 
-    // Action count: 8
+    // Action count: 7
     actions
     {
         If(Compare(Player Variable(Event Player, ult_charge), >=, Player Variable(Event Player, ult_charge_max)));
             Set Player Variable(Event Player, ult_charge, Player Variable(Event Player, ult_charge_max));
-            Set Ultimate Charge(Event Player, 100);
         End;
-        Set Ultimate Charge(Event Player, Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100));
-        Modify Player Variable(Event Player, ult_charge, Add, 0.3333333333);
-        Wait(0.1, Ignore Condition);
+        Modify Player Variable(Event Player, ult_charge, Add, 0.6666666667);
+        Wait(0.2, Ignore Condition);
+        Set Ultimate Charge(Event Player, Min(99, Multiply(Divide(Player Variable(Event Player, ult_charge), Player Variable(Event Player, ult_charge_max)), 100)));
         Loop;
     }
 }
@@ -1071,7 +1064,7 @@ rule("Brig: Try and cancel ult")
     conditions
     {
         Is Button Held(Event Player, Button(Ultimate)) == True;
-        Player Variable(Event Player, ult_charge) >= Subtract(Player Variable(Event Player, ult_charge_max), 1);
+        Ultimate Charge Percent(Event Player) >= 99;
     }
 
     // Action count: 12
@@ -1609,16 +1602,16 @@ rule("Moira: Resource")
     {
         If(Is Firing Primary(Event Player));
             Set Healing Dealt(Event Player, 114.3);
-            Modify Player Variable(Event Player, moira_resource, Subtract, 1.1333333333);
+            Modify Player Variable(Event Player, moira_resource, Subtract, 3.4);
         Else;
             Set Healing Dealt(Event Player, 100);
-            Modify Player Variable(Event Player, moira_resource, Add, 0.2496);
+            Modify Player Variable(Event Player, moira_resource, Add, 0.7488);
         End;
         Set Ability Resource(Event Player, Button(Primary Fire), Player Variable(Event Player, moira_resource));
         If(Compare(Player Variable(Event Player, moira_resource), >, 100));
             Set Player Variable(Event Player, moira_resource, 100);
         End;
-        Wait(0.0666666667, Ignore Condition);
+        Wait(0.2, Ignore Condition);
         Loop;
     }
 }
