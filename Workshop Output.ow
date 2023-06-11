@@ -144,7 +144,7 @@ rule("Has Spawned Setup")
         Has Spawned(Event Player) == True;
     }
 
-    // Action count: 152
+    // Action count: 149
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -231,7 +231,6 @@ rule("Has Spawned Setup")
             Wait(0.1, Ignore Condition);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 0);
-            Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Max Health(Event Player, 166.6666666667);
             Set Player Variable(Event Player, temp_player, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player), array_sum_temp, 100);
@@ -256,7 +255,6 @@ rule("Has Spawned Setup")
             Set Player Variable(Event Player, health_reference, Last Created Health Pool);
             Add Health Pool To Player(Event Player, Armor, 15.39, True, True);
             Set Player Variable(Event Player, armor_reference, Last Created Health Pool);
-            Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Player Variable(Event Player, temp_player_0, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_0), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
@@ -282,7 +280,6 @@ rule("Has Spawned Setup")
             Set Healing Received(Event Player, 200);
             Add Health Pool To Player(Event Player, Health, 150, True, True);
             Add Health Pool To Player(Event Player, Shields, 175, True, True);
-            Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Player Variable(Event Player, temp_player_1, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_1), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
@@ -353,6 +350,7 @@ rule("Increased Knockback")
     conditions
     {
         Player Variable(Event Player, booped) == 1;
+        Player Variable(Event Player, role) == 0;
     }
 
     // Action count: 3
@@ -380,7 +378,7 @@ rule("Check For Hero Swap")
         Hero Of(Event Player) != Hero(Soldier: 76);
     }
 
-    // Action count: 152
+    // Action count: 149
     actions
     {
         Destroy HUD Text(Player Variable(Event Player, zarya_hud_ref));
@@ -467,7 +465,6 @@ rule("Check For Hero Swap")
             Wait(0.1, Ignore Condition);
             Set Player Variable(Event Player, effect_scale, 1);
             Set Player Variable(Event Player, role, 0);
-            Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Max Health(Event Player, 166.6666666667);
             Set Player Variable(Event Player, temp_player_3, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_3), array_sum_temp, 100);
@@ -492,7 +489,6 @@ rule("Check For Hero Swap")
             Set Player Variable(Event Player, health_reference, Last Created Health Pool);
             Add Health Pool To Player(Event Player, Armor, 15.39, True, True);
             Set Player Variable(Event Player, armor_reference, Last Created Health Pool);
-            Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Player Variable(Event Player, temp_player_4, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_4), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
@@ -518,7 +514,6 @@ rule("Check For Hero Swap")
             Set Healing Received(Event Player, 200);
             Add Health Pool To Player(Event Player, Health, 150, True, True);
             Add Health Pool To Player(Event Player, Shields, 175, True, True);
-            Set Player Variable At Index(Event Player, dam_modify, 1, 100);
             Set Player Variable(Event Player, temp_player_5, Event Player);
             Set Player Variable(Player Variable(Event Player, temp_player_5), array_sum_temp, 100);
             Set Global Variable(temp_count, 0);
@@ -1821,10 +1816,11 @@ rule("Rein: Ult Damage")
         Is On Ground(Event Player) == True;
     }
 
-    // Action count: 1
+    // Action count: 2
     actions
     {
         Set Damage Dealt(Event Player, 20);
+        Wait(3, Ignore Condition);
     }
 }
 
@@ -1925,11 +1921,12 @@ rule("Zarya: Personal Bubble")
         Is Using Ability 1(Event Player) == True;
     }
 
-    // Action count: 7
+    // Action count: 8
     actions
     {
+        Wait(0.0333333333, Ignore Condition);
         Set Ability 1 Enabled(Event Player, False);
-        Set Player Variable(Event Player, zarya_shield_cooldown_1, 8);
+        Set Player Variable(Event Player, zarya_shield_cooldown_1, 10);
         While(Compare(Player Variable(Event Player, zarya_shield_cooldown_1), >, 0));
             Wait(1, Ignore Condition);
             Modify Player Variable(Event Player, zarya_shield_cooldown_1, Subtract, 1);
@@ -1953,9 +1950,10 @@ rule("Zarya: Other Bubble")
         Is Using Ability 2(Event Player) == True;
     }
 
-    // Action count: 7
+    // Action count: 8
     actions
     {
+        Wait(0.0333333333, Ignore Condition);
         Set Ability 2 Enabled(Event Player, False);
         Set Player Variable(Event Player, zarya_shield_cooldown_2, 8);
         While(Compare(Player Variable(Event Player, zarya_shield_cooldown_2), >, 0));

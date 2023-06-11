@@ -237,7 +237,7 @@ void rein_setup()
 	Wait(1/10);
 	effect_scale = 1.0;
 	role = 0;
-	dam_modify[1] = 100;
+	//dam_modify[1] = 100;
 	SetMaxHealth(EventPlayer(),(2000/1200) * 100);
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
@@ -264,7 +264,7 @@ void winton_setup()
 	SetMaxHealth(EventPlayer(),(600/650)*100);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,476.92,true,true);
 	armor_reference  = AddHealthPoolToPlayer(EventPlayer(),HealthType.Armor,15.39,true,true);
-	dam_modify[1] = 100;
+	//dam_modify[1] = 100;
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
 	healing_recieved = 2;
@@ -286,7 +286,7 @@ void zarya_setup()
 	//SetMaxHealth(EventPlayer(),50);
 	AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,150,true,true);
 	AddHealthPoolToPlayer(EventPlayer(),HealthType.Shields,175,true,true);
-	dam_modify[1] = 100;
+	//dam_modify[1] = 100;
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
 	damage_float = 2.0;
@@ -360,6 +360,7 @@ Event.OnDeath
 rule:"Increased Knockback"
 Event.OngoingPlayer
 if(booped == 1)
+if(role == 0)
 {
 	//when a tank recieves a knockback effect, booped will turn to true, so it will wait to let the players velocity change, then raise it a bit more, to remove the tank knockback resistance
 	Wait(1/20);
@@ -1155,6 +1156,7 @@ if(IsUsingUltimate())
 if(IsOnGround())
 {
 	SetDamageDealt(EventPlayer(),20);
+	Wait(3);
 }
 
 rule: "Rein: Raise Outer Ult Damage"
@@ -1210,9 +1212,10 @@ Event.OngoingPlayer
 Player.Zarya
 if(IsUsingAbility1(EventPlayer()))
 {
+	Wait(1/30);
 	SetAbility1Enabled(EventPlayer(),false);
 	
-    for(zarya_shield_cooldown_1 = 8; zarya_shield_cooldown_1 > 0; zarya_shield_cooldown_1--){
+    for(zarya_shield_cooldown_1 = 10; zarya_shield_cooldown_1 > 0; zarya_shield_cooldown_1--){
         Wait(1);
     }
 	SetAbility1Enabled(EventPlayer(),true);
@@ -1223,6 +1226,7 @@ Event.OngoingPlayer
 Player.Zarya
 if(IsUsingAbility2(EventPlayer()))
 {
+	Wait(1/30);
 	SetAbility2Enabled(EventPlayer(),false);
     for(zarya_shield_cooldown_2 = 8; zarya_shield_cooldown_2 > 0; zarya_shield_cooldown_2--){
         Wait(1);
