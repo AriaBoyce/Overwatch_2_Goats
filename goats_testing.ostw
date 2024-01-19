@@ -185,7 +185,8 @@ void default_setup()
     {
         zarya_setup();
     }   
-	SmallMessage(EventPlayer(),"Patch Version: 2.0.12 6/8/2023");
+	SmallMessage(EventPlayer(),"Patch Version: 2.0.14 1/19/2024");
+	//CreateHudText(AllPlayers(),"{0} {1} {2}".Format([HealthOfType(EventPlayer(),HealthType.Health),HealthOfType(EventPlayer(),HealthType.Armor),HealthOfType(EventPlayer(),HealthType.Shields)]),null,null,Location.Left,0,Color.White,Color.White,Color.White,HudTextRev.String,Spectators.DefaultVisibility);
 }
 
 void ana_setup()
@@ -205,7 +206,7 @@ void brig_setup()
 	healing_recieved = 1;
 	SetHealingReceived(EventPlayer(), 100);
 	SetHealingDealt(EventPlayer(),1);
-	SetMaxHealth(EventPlayer(),50);
+	SetMaxHealth(EventPlayer(),(50/120)*100);
 	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,50,true,true);
 	DestroyHudText(brig_hud_ref);
 	damage_float = 1.0;
@@ -238,13 +239,15 @@ void rein_setup()
 	effect_scale = 1.0;
 	role = 0;
 	//dam_modify[1] = 100;
-	SetMaxHealth(EventPlayer(),(2000/1200) * 100);
+	SetMaxHealth(EventPlayer(),(2000/1400) * 100);
 	sum_array_damage(EventPlayer());
 	SetDamageReceived(EventPlayer(),damage_taken);
 	SetHealingReceived(EventPlayer(),200);
 	damage_float = 2.0;
 	healing_recieved = 2;
+	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Health,142.26,true,true);
 }
+
 void moira_setup()
 {
 	effect_scale = 1.0;
@@ -254,6 +257,8 @@ void moira_setup()
 	healing_dealt = 115;
 	SetHealingDealt(EventPlayer(),115);
 	damage_float = 1.0;
+	DestroyHudText(zarya_shield_cooldown_1);
+	CreateHudText(EventPlayer(), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n                                                <0>%", RoundToInteger(moira_resource, Rounding.Up)>, Location.Top, 1, Color.White, Color.White, Color.White, HudTextRev.String, Spectators.DefaultVisibility);
 }
 
 void winton_setup()
@@ -302,6 +307,8 @@ void zen_setup()
 	max_shield_health = 150;
 	current_shield_health = 150;
 	role = 1;
+	SetMaxHealth(EventPlayer(),(2/3)*100);
+	health_reference = AddHealthPoolToPlayer(EventPlayer(),HealthType.Shields,50,true,true);
 	SetDamageDealt(EventPlayer(), damage_var);
 	//zen_discord_hud_ref = CreateHudText(EventPlayer(),null,null,"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{0}{1}{2}".Format(["                                                                                    ","                                                                                                                 ",HeroOf( DiscordTarget)]),Location.Left,0,Color.White,Color.White,Color.Purple,HudTextRev.String,Spectators.VisibleNever);
 }
@@ -549,14 +556,7 @@ if(IsInSpawnRoom(EventPlayer()))
 //ANA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-rule: "Ana Primary Fire"
-Event.OnDamageDealt
-Player.Ana
-if(EventAbility() == Button.PrimaryFire)
-{
-	//since her damage ticks so fast, heal a little bit of each tick to make up for the 5 extra damage she does
-    workshopHeal(Victim(),null,EventDamage()*0.07);
-}
+
 
 rule: "Ana Anti Nade"
 Event.OnDamageDealt
@@ -591,7 +591,7 @@ if(EventAbility() == Button.Ability1)
 	{
 		ClearStatus(Victim(),Status.Asleep);
 		SetStatus(Victim(), Attacker(), Status.Asleep, 100);
-		Wait(3);//wait next 3 seconds
+		Wait(4);//wait next 3 seconds
 		ClearStatus(Victim(), Status.Asleep);
 		Victim().is_asleep = false;
 	}
@@ -638,6 +638,7 @@ Event.OngoingPlayer
 Player.Brigitte
 if(IsButtonHeld(EventPlayer(),Button.Ultimate))
 if(UltimateChargePercent(EventPlayer()) >= 99)
+if(IsAlive(EventPlayer()))
 {
 	BigMessage(AllPlayers(OppositeTeamOf(TeamOf(EventPlayer()))),"RAID BOSS INCOMING");
 	BigMessage(AllPlayers(TeamOf(EventPlayer())),"RALLY TO ME");
@@ -685,35 +686,54 @@ if(brig_ult == true)
 	LoopIfConditionIsTrue();
 }
 
+rule: "Brig: Damage Teammates during Repair Pack Throw"
+Event.OngoingPlayer
+Player.Brigitte
+if (IsUsingAbility2(EventPlayer()) == true)
+{
+	SetAbilityCharge(EventPlayer(),Button.Ability2,0);
+	SetAbilityCooldown(EventPlayer(),Button.Ability2,6);
+    Damage(PlayersInViewAngle(EventPlayer(), TeamOf(EventPlayer()), 45), null, 0.01);
+    MinWait();
+    LoopIfConditionIsTrue();
+}
+playervar define is_packing;
 rule: "Brig: Repair Pack Default"
 Event.OnHealingDealt
 Player.Brigitte
 if (EventAbility() == Button.Ability2)
 if (HeroOf(Healee()) != Hero.Lucio)
 {
-	define temp_health = MaxHealth(Healee()) - Health(Healee());
-	define heal_amount = 150;
-	heal_amount -= temp_health/Healee().healing_recieved;
-	if (temp_health > 150)
+	if(is_packing == false)
 	{
-		workshopHeal(Healee(), Healer(), 150);
+		is_packing = true;
+		define temp_health = MaxHealth(Healee()) - Health(Healee());
+		define heal_amount = 150;
+		heal_amount -= temp_health/Healee().healing_recieved;
+		if (temp_health > 150)
+		{
+			workshopHeal(Healee(), Healer(), 150);
+		}
+		else
+		{
+			workshopHeal(Healee(), Healer(), temp_health);
+		}
+		if (heal_amount > 75)
+		{
+			heal_amount = 75;
+		}
+		if(heal_amount < 1)
+		{
+			heal_amount = 0;
+		}
+		Healee().armor_pack_ref = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount*Healee().healing_recieved, false, true);
+		SetAbility2Enabled(EventPlayer(), false);
+		Wait(6, WaitBehavior.IgnoreCondition);
+		SetAbility2Enabled(EventPlayer(), true);
+		is_packing = false;
 	}
-	else
-	{
-		workshopHeal(Healee(), Healer(), temp_health);
-	}
-	if (heal_amount > 75)
-	{
-		heal_amount = 75;
-	}
-	if(heal_amount < 1)
-	{
-		heal_amount = 0;
-	}
-	Healee().armor_pack_ref = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount*Healee().healing_recieved, false, true);
-	SetAbility2Enabled(EventPlayer(), false);
-	Wait(6, WaitBehavior.IgnoreCondition);
-	SetAbility2Enabled(EventPlayer(), true);
+
+
 }
 
 rule: "Brig: Repair Pack Lucio"
@@ -722,25 +742,31 @@ Player.Brigitte
 if (EventAbility() == Button.Ability2)
 if (HeroOf(Healee()) == Hero.Lucio)
 {
-	define temp_health = MaxHealth(Healee()) - Health(Healee());
-	define heal_amount = 150;
-	heal_amount -= temp_health;
-	if (temp_health > 150)
+	if(is_packing == false)
 	{
-		workshopHeal(Healee(), Healer(), 234);
+		is_packing = true;
+		define temp_health = MaxHealth(Healee()) - Health(Healee());
+		define heal_amount = 150;
+		heal_amount -= temp_health;
+		if (temp_health > 150)
+		{
+			workshopHeal(Healee(), Healer(), 234);
+		}
+		else
+		{
+			workshopHeal(Healee(), Healer(), temp_health / 0.80);
+		}
+		if (heal_amount > 75)
+		{
+			heal_amount = 75;
+		}
+		Healee().armor_pack_ref = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
+		SetAbility2Enabled(EventPlayer(), false);
+		Wait(6, WaitBehavior.IgnoreCondition);
+		SetAbility2Enabled(EventPlayer(), true);
+		is_packing = false;
 	}
-	else
-	{
-		workshopHeal(Healee(), Healer(), temp_health / 0.80);
-	}
-	if (heal_amount > 75)
-	{
-		heal_amount = 75;
-	}
-	Healee().armor_pack_ref = AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
-	SetAbility2Enabled(EventPlayer(), false);
-	Wait(6, WaitBehavior.IgnoreCondition);
-	SetAbility2Enabled(EventPlayer(), true);
+
 }
 
 rule: "Brig: Remove Repair Pack Health"
@@ -815,24 +841,54 @@ if(IsFiringPrimary(EventPlayer()))
 	SetMoveSpeed(EventPlayer(),100);
 }
 
-rule:"Brig: Shield Bash Stun"
+rule: "Brig: Shield Bash Stun"
 Event.OnDamageDealt
 Player.Brigitte
-if(IsFiringSecondary())
-if(EventAbility() == Button.PrimaryFire)
+if (IsFiringSecondary(EventPlayer()) == true)
+if (EventAbility() == Button.PrimaryFire)
 {
-	SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
-	/*
-	//if she damages with shield, give stun effect
-	if(brig_shield_range > brig_enemy_range)
-	{
-		SetStatus(Victim(),Attacker(),Status.Stunned,0.9);
-	}
-	else
-	{
-		workshopHeal(Victim(),null,EventDamage()/Victim().healing_recieved);
-	}
-	*/
+    if (Victim().nano_check == true)
+    {
+        if (HealthOfType(Victim(), HealthType.Armor) > 1)
+        {
+            if (EventDamage() > 18 / Victim().damage_float)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+        else
+        {
+            if (EventDamage() > 25 / Victim().damage_float)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+    }
+    else
+    {
+        if (HealthOfType(Victim(), HealthType.Armor) > 1)
+        {
+            if (EventDamage() > 30 / Victim().damage_float)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+        else
+        {
+            if (EventDamage() > 35 / Victim().damage_float)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+    }
 }
 
 rule:"Brig: Reduce Armor From Damage"
@@ -868,6 +924,15 @@ if(brig_ult_armor_amount > 0)
 // 	Wait(1.5,WaitBehavior.AbortWhenFalse);
 // 	brig_inspire = 0;
 // }
+
+rule: "Brig: Create Inspire Healing"
+Event.OnDamageDealt
+Player.Brigitte
+{
+	StopAllHealOverTime(PlayersWithinRadius(PositionOf(Attacker()), 10, TeamOf(Attacker()), RadiusLOS.SurfacesAndEnemyBarriers));
+	StartHealOverTime(PlayersWithinRadius(PositionOf(Attacker()), 10, TeamOf(Attacker()), RadiusLOS.SurfacesAndEnemyBarriers), Attacker(), 5, 16);
+	Wait(1.5, WaitBehavior.IgnoreCondition);
+}
 
 rule: "Brig: Raise Self Healing"
 Event.OnHealingTaken
@@ -1203,6 +1268,13 @@ if(IsUsingUltimate())
 	//workshopHeal(EventPlayer(),null,1000);
 }
 
+rule: "Winston: Reduce Armor Damage"
+Event.OnDamageDealt
+Player.Winston
+if(HealthOfType(Victim(),HealthType.Armor) > 1)
+{
+	Heal(Victim(),null,EventDamage()*0.3);
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Zarya
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
