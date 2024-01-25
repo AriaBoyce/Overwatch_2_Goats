@@ -1,0 +1,2047 @@
+globalvar define server_stress_time;
+playervar define base_health;
+playervar define base_armor;
+playervar define base_shield;
+playervar define baby_health;
+playervar define baby_armor;
+playervar define baby_shield;
+playervar define base_health_ref;
+playervar define storedSpawnPosition;
+playervar define base_healing_recieved;
+playervar define ult_charge_max;
+playervar define ult_charge;
+playervar define brig_ult;
+playervar define brig_ult_ref;
+playervar define brig_ult_armor_amount;
+playervar define brig_ult_armor_ref;
+playervar define armor_pack_ref;
+playervar define role;
+playervar define players_in_range;
+playervar define booped;
+playervar define moira_resource;
+playervar define zarya_shield_cooldown_1;
+playervar define zarya_shield_cooldown_2;
+playervar define has_nano;
+playervar define setup_done;
+playervar define zarya_hud_ref;
+playervar define interact_button;
+playervar define player_hero;
+playervar define setting_health;
+playervar define current_shield_health;
+playervar define max_shield_health;
+playervar define time_since_damage_shield;
+playervar define i;
+playervar define temp_health;
+playervar define heal_amount;
+playervar define temp_health_0;
+playervar define heal_amount_0;
+playervar define temp_damage;
+playervar define temp_health_1;
+playervar define temp_armor;
+
+rule: "Hold F for 3 seconds"
+Event.OngoingPlayer
+if (IsButtonHeld(EventPlayer(), Button.Interact) == true)
+if (IsInSpawnRoom(EventPlayer()) == true)
+{
+    interact_button += 0.5;
+    if (interact_button > 3)
+    {
+        SetAbility1Enabled(EventPlayer(), true);
+        SetAbility2Enabled(EventPlayer(), true);
+        if (HeroOf(EventPlayer()) == Hero.Dva && IsInAlternateForm(EventPlayer()) == true)
+        {
+            ForcePlayerHero(EventPlayer(), Hero.Sojourn);
+            StopForcingHero(EventPlayer());
+            Wait(0.1, WaitBehavior.IgnoreCondition);
+            ForcePlayerHero(EventPlayer(), player_hero);
+            StopForcingHero(EventPlayer());
+            interact_button = 0;
+        }
+        else
+        {
+            ForcePlayerHero(EventPlayer(), Hero.Soldier76);
+            StopForcingHero(EventPlayer());
+            Wait(0.1, WaitBehavior.IgnoreCondition);
+            ForcePlayerHero(EventPlayer(), player_hero);
+            StopForcingHero(EventPlayer());
+            interact_button = 0;
+        }
+    }
+    if (!IsButtonHeld(EventPlayer(), Button.Interact))
+    {
+        interact_button = 0;
+    }
+    Wait(0.5, WaitBehavior.IgnoreCondition);
+    LoopIfConditionIsTrue();
+}
+
+void ana_setup() "Ana Setup"
+{
+    base_health = 200;
+    base_healing_recieved = 100;
+    role = 0;
+    player_hero = Hero.Ana;
+    if (setting_health == false)
+    {
+        setting_health = true;
+        storedSpawnPosition = PositionOf(EventPlayer());
+        # If the player is in spawn, teleport them out as they are invulnerable in spawn
+        if (IsInSpawnRoom(EventPlayer()))
+        {
+            StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+            Wait(0.032, WaitBehavior.IgnoreCondition);
+            Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector(0, 1000, 0));
+            SetGravity(EventPlayer(), 0);
+            WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+            MinWait();
+        }
+        # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+        SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+        # Damage the player so they're at one health
+        Damage(EventPlayer(), null, 999999986991104);
+        MinWait();
+        # Apply temporary base health to the player
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+        MinWait();
+        # Remove temporary base health from the player
+        RemoveAllHealthPoolsFromPlayer(EventPlayer());
+        MinWait();
+        # Apply custom health pool to player
+        if (base_health > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+        }
+        if (base_armor > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+        }
+        if (base_shield > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+        }
+        Heal(EventPlayer(), null, 999999986991104);
+        # Teleport player back if they were in spawn.
+        if (storedSpawnPosition)
+        {
+            MinWait();
+            Teleport(EventPlayer(), storedSpawnPosition);
+            storedSpawnPosition = null;
+            StopCamera(EventPlayer());
+        }
+        SetGravity(EventPlayer(), 100);
+        setting_health = false;
+    }
+}
+
+void brig_setup() "Brig Setup"
+{
+    role = 0;
+    ult_charge_max = 2550;
+    base_healing_recieved = 100;
+    base_health = 200;
+    base_armor = 50;
+    player_hero = Hero.Brigitte;
+    if (setting_health == false)
+    {
+        setting_health = true;
+        storedSpawnPosition = PositionOf(EventPlayer());
+        # If the player is in spawn, teleport them out as they are invulnerable in spawn
+        if (IsInSpawnRoom(EventPlayer()))
+        {
+            StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+            Wait(0.032, WaitBehavior.IgnoreCondition);
+            Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector(0, 1000, 0));
+            SetGravity(EventPlayer(), 0);
+            WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+            MinWait();
+        }
+        # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+        SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+        # Damage the player so they're at one health
+        Damage(EventPlayer(), null, 999999986991104);
+        MinWait();
+        # Apply temporary base health to the player
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+        MinWait();
+        # Remove temporary base health from the player
+        RemoveAllHealthPoolsFromPlayer(EventPlayer());
+        MinWait();
+        # Apply custom health pool to player
+        if (base_health > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+        }
+        if (base_armor > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+        }
+        if (base_shield > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+        }
+        Heal(EventPlayer(), null, 999999986991104);
+        # Teleport player back if they were in spawn.
+        if (storedSpawnPosition)
+        {
+            MinWait();
+            Teleport(EventPlayer(), storedSpawnPosition);
+            storedSpawnPosition = null;
+            StopCamera(EventPlayer());
+        }
+        SetGravity(EventPlayer(), 100);
+        setting_health = false;
+    }
+}
+
+void dva_setup() "Dva Setup"
+{
+    baby_armor = 0;
+    baby_health = 150;
+    baby_shield = 0;
+    base_armor = 200;
+    base_health = 400;
+    base_shield = 0;
+    player_hero = Hero.Dva;
+}
+
+void rein_setup() "Rein Setup"
+{
+    SetMaxHealth(EventPlayer(), 2000 / 1400 * 100);
+    base_health = 300;
+    base_armor = 200;
+    player_hero = Hero.Reinhardt;
+    if (setting_health == false)
+    {
+        setting_health = true;
+        storedSpawnPosition = PositionOf(EventPlayer());
+        # If the player is in spawn, teleport them out as they are invulnerable in spawn
+        if (IsInSpawnRoom(EventPlayer()))
+        {
+            StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+            Wait(0.032, WaitBehavior.IgnoreCondition);
+            Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector(0, 1000, 0));
+            SetGravity(EventPlayer(), 0);
+            WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+            MinWait();
+        }
+        # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+        SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+        # Damage the player so they're at one health
+        Damage(EventPlayer(), null, 999999986991104);
+        MinWait();
+        # Apply temporary base health to the player
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+        MinWait();
+        # Remove temporary base health from the player
+        RemoveAllHealthPoolsFromPlayer(EventPlayer());
+        MinWait();
+        # Apply custom health pool to player
+        if (base_health > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+        }
+        if (base_armor > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+        }
+        if (base_shield > 0)
+        {
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+        }
+        Heal(EventPlayer(), null, 999999986991104);
+        # Teleport player back if they were in spawn.
+        if (storedSpawnPosition)
+        {
+            MinWait();
+            Teleport(EventPlayer(), storedSpawnPosition);
+            storedSpawnPosition = null;
+            StopCamera(EventPlayer());
+        }
+        SetGravity(EventPlayer(), 100);
+        setting_health = false;
+    }
+    base_healing_recieved = 100;
+    role = 1;
+}
+
+rule: "Check For Hero Swap Reset"
+Event.OngoingPlayer
+if (HeroOf(EventPlayer()) == Hero.Soldier76)
+if (setup_done == true)
+{
+    Wait(0.5, WaitBehavior.IgnoreCondition);
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100.001);
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100);
+    Heal(EventPlayer(), null, 999999986991104);
+    base_armor = 0;
+    base_health = 0;
+    base_shield = 0;
+    DestroyHudText(zarya_shield_cooldown_1);
+    DestroyHudText(zarya_shield_cooldown_2);
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100.001);
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100);
+    Heal(EventPlayer(), null, 999999986991104);
+    if (TeamOf(EventPlayer()) == Team.Team2)
+    {
+        Wait(1, WaitBehavior.IgnoreCondition);
+    }
+    if (HeroOf(EventPlayer()) == Hero.Ana)
+    {
+        ana_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Brigitte)
+    {
+        brig_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Dva)
+    {
+        dva_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Reinhardt)
+    {
+        rein_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Moira)
+    {
+        role = 1;
+        moira_resource = 100;
+        base_health = 200;
+        player_hero = Hero.Moira;
+        SetHealingDealt(EventPlayer(), 115);
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        DestroyHudText(zarya_shield_cooldown_1);
+        CreateHudText(AllPlayers(Team.All), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n                                                <0>%", RoundToInteger(moira_resource, Rounding.Up)>, Location.Top, 1, Color.White, Color.White, Color.White, HudTextRev.String, Spectators.DefaultVisibility);
+        zarya_shield_cooldown_1 = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Winston)
+    {
+        SetMaxHealth(EventPlayer(), 92.308);
+        base_health = 300;
+        base_armor = 200;
+        player_hero = Hero.Winston;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zarya)
+    {
+        base_health = 200;
+        base_shield = 200;
+        player_hero = Hero.Zarya;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+        CreateHudText(EventPlayer(), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    <0>                                                                    <1>             <2>", "", <"<0><1>", "", RoundToInteger(zarya_shield_cooldown_1, Rounding.Up)>, RoundToInteger(zarya_shield_cooldown_2, Rounding.Up)>, Location.Left, 1, Color.White, Color.Black, Color.White, HudTextRev.String, Spectators.VisibleNever);
+        zarya_hud_ref = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zenyatta)
+    {
+        base_health = 50;
+        base_shield = 150;
+        player_hero = Hero.Zenyatta;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        role = 0;
+    }
+}
+
+rule: "Check For Hero Swap Manual"
+Event.OngoingPlayer
+if (HeroOf(EventPlayer()) != player_hero)
+if (HeroOf(EventPlayer()) != Hero.Soldier76)
+if (setup_done == true)
+{
+    Wait(0.5, WaitBehavior.IgnoreCondition);
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100.001);
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100);
+    Heal(EventPlayer(), null, 999999986991104);
+    base_armor = 0;
+    base_health = 0;
+    base_shield = 0;
+    DestroyHudText(zarya_shield_cooldown_1);
+    DestroyHudText(zarya_shield_cooldown_2);
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100.001);
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100);
+    Heal(EventPlayer(), null, 999999986991104);
+    if (TeamOf(EventPlayer()) == Team.Team2)
+    {
+        Wait(1, WaitBehavior.IgnoreCondition);
+    }
+    if (HeroOf(EventPlayer()) == Hero.Ana)
+    {
+        ana_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Brigitte)
+    {
+        brig_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Dva)
+    {
+        dva_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Reinhardt)
+    {
+        rein_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Moira)
+    {
+        role = 1;
+        moira_resource = 100;
+        base_health = 200;
+        player_hero = Hero.Moira;
+        SetHealingDealt(EventPlayer(), 115);
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        DestroyHudText(zarya_shield_cooldown_1);
+        CreateHudText(AllPlayers(Team.All), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n                                                <0>%", RoundToInteger(moira_resource, Rounding.Up)>, Location.Top, 1, Color.White, Color.White, Color.White, HudTextRev.String, Spectators.DefaultVisibility);
+        zarya_shield_cooldown_1 = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Winston)
+    {
+        SetMaxHealth(EventPlayer(), 92.308);
+        base_health = 300;
+        base_armor = 200;
+        player_hero = Hero.Winston;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zarya)
+    {
+        base_health = 200;
+        base_shield = 200;
+        player_hero = Hero.Zarya;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+        CreateHudText(EventPlayer(), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    <0>                                                                    <1>             <2>", "", <"<0><1>", "", RoundToInteger(zarya_shield_cooldown_1, Rounding.Up)>, RoundToInteger(zarya_shield_cooldown_2, Rounding.Up)>, Location.Left, 1, Color.White, Color.Black, Color.White, HudTextRev.String, Spectators.VisibleNever);
+        zarya_hud_ref = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zenyatta)
+    {
+        base_health = 50;
+        base_shield = 150;
+        player_hero = Hero.Zenyatta;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        role = 0;
+    }
+}
+
+rule: "Check For Hero Dva"
+Event.OngoingPlayer
+Player.Dva
+if (HeroOf(EventPlayer()) != player_hero)
+if (HeroOf(EventPlayer()) != Hero.Soldier76)
+{
+    base_armor = 0;
+    base_health = 0;
+    base_shield = 0;
+    DestroyHudText(zarya_shield_cooldown_1);
+    DestroyHudText(zarya_shield_cooldown_2);
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100.001);
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100);
+    Heal(EventPlayer(), null, 999999986991104);
+    if (TeamOf(EventPlayer()) == Team.Team2)
+    {
+        Wait(1, WaitBehavior.IgnoreCondition);
+    }
+    if (HeroOf(EventPlayer()) == Hero.Ana)
+    {
+        ana_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Brigitte)
+    {
+        brig_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Dva)
+    {
+        dva_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Reinhardt)
+    {
+        rein_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Moira)
+    {
+        role = 1;
+        moira_resource = 100;
+        base_health = 200;
+        player_hero = Hero.Moira;
+        SetHealingDealt(EventPlayer(), 115);
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        DestroyHudText(zarya_shield_cooldown_1);
+        CreateHudText(AllPlayers(Team.All), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n                                                <0>%", RoundToInteger(moira_resource, Rounding.Up)>, Location.Top, 1, Color.White, Color.White, Color.White, HudTextRev.String, Spectators.DefaultVisibility);
+        zarya_shield_cooldown_1 = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Winston)
+    {
+        SetMaxHealth(EventPlayer(), 92.308);
+        base_health = 300;
+        base_armor = 200;
+        player_hero = Hero.Winston;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zarya)
+    {
+        base_health = 200;
+        base_shield = 200;
+        player_hero = Hero.Zarya;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+        CreateHudText(EventPlayer(), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    <0>                                                                    <1>             <2>", "", <"<0><1>", "", RoundToInteger(zarya_shield_cooldown_1, Rounding.Up)>, RoundToInteger(zarya_shield_cooldown_2, Rounding.Up)>, Location.Left, 1, Color.White, Color.Black, Color.White, HudTextRev.String, Spectators.VisibleNever);
+        zarya_hud_ref = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zenyatta)
+    {
+        base_health = 50;
+        base_shield = 150;
+        player_hero = Hero.Zenyatta;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        role = 0;
+    }
+}
+
+rule: "Initial Setup"
+Event.OngoingPlayer
+if (HasSpawned(EventPlayer()) == true)
+{
+    setup_done = false;
+    player_hero = HeroOf(EventPlayer());
+    base_armor = 0;
+    base_health = 0;
+    base_shield = 0;
+    DestroyHudText(zarya_shield_cooldown_1);
+    DestroyHudText(zarya_shield_cooldown_2);
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100.001);
+    MinWait();
+    SetMaxHealth(EventPlayer(), 100);
+    Heal(EventPlayer(), null, 999999986991104);
+    if (TeamOf(EventPlayer()) == Team.Team2)
+    {
+        Wait(1, WaitBehavior.IgnoreCondition);
+    }
+    if (HeroOf(EventPlayer()) == Hero.Ana)
+    {
+        ana_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Brigitte)
+    {
+        brig_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Dva)
+    {
+        dva_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Reinhardt)
+    {
+        rein_setup();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Moira)
+    {
+        role = 1;
+        moira_resource = 100;
+        base_health = 200;
+        player_hero = Hero.Moira;
+        SetHealingDealt(EventPlayer(), 115);
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        DestroyHudText(zarya_shield_cooldown_1);
+        CreateHudText(AllPlayers(Team.All), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n                                                <0>%", RoundToInteger(moira_resource, Rounding.Up)>, Location.Top, 1, Color.White, Color.White, Color.White, HudTextRev.String, Spectators.DefaultVisibility);
+        zarya_shield_cooldown_1 = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Winston)
+    {
+        SetMaxHealth(EventPlayer(), 92.308);
+        base_health = 300;
+        base_armor = 200;
+        player_hero = Hero.Winston;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zarya)
+    {
+        base_health = 200;
+        base_shield = 200;
+        player_hero = Hero.Zarya;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        base_healing_recieved = 100;
+        role = 1;
+        CreateHudText(EventPlayer(), null, null, <"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    <0>                                                                    <1>             <2>", "", <"<0><1>", "", RoundToInteger(zarya_shield_cooldown_1, Rounding.Up)>, RoundToInteger(zarya_shield_cooldown_2, Rounding.Up)>, Location.Left, 1, Color.White, Color.Black, Color.White, HudTextRev.String, Spectators.VisibleNever);
+        zarya_hud_ref = LastTextID();
+    }
+    if (HeroOf(EventPlayer()) == Hero.Zenyatta)
+    {
+        base_health = 50;
+        base_shield = 150;
+        player_hero = Hero.Zenyatta;
+        if (setting_health == false)
+        {
+            setting_health = true;
+            storedSpawnPosition = PositionOf(EventPlayer());
+            # If the player is in spawn, teleport them out as they are invulnerable in spawn
+            if (IsInSpawnRoom(EventPlayer()))
+            {
+                StartCamera(EventPlayer(), EyePosition(EventPlayer()), EyePosition(EventPlayer()) + FacingDirectionOf(EventPlayer()), 0.001);
+                Wait(0.032, WaitBehavior.IgnoreCondition);
+                Teleport(EventPlayer(), PositionOf(EventPlayer()) + Vector([], 1000, []));
+                SetGravity(EventPlayer(), 0);
+                WaitUntil(!IsInSpawnRoom(EventPlayer()) && !HasStatus(EventPlayer(), Status.Invincible) && !HasStatus(EventPlayer(), Status.Unkillable), 1);
+                MinWait();
+            }
+            # # Applying Custom Health ##\r\n Apply an unkillable status so we don't accidentally kill the player
+            SetStatus(EventPlayer(), EventPlayer(), Status.Unkillable, 1);
+            # Damage the player so they're at one health
+            Damage(EventPlayer(), null, 999999986991104);
+            MinWait();
+            # Apply temporary base health to the player
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, 999999986991104, true, true);
+            AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, 999999986991104, true, true);
+            MinWait();
+            # Remove temporary base health from the player
+            RemoveAllHealthPoolsFromPlayer(EventPlayer());
+            MinWait();
+            # Apply custom health pool to player
+            if (base_health > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, Max(1, base_health - 1), true, true);
+            }
+            if (base_armor > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, Max(1, base_armor), true, true);
+            }
+            if (base_shield > 0)
+            {
+                AddHealthPoolToPlayer(EventPlayer(), HealthType.Shields, Max(1, base_shield), true, true);
+            }
+            Heal(EventPlayer(), null, 999999986991104);
+            # Teleport player back if they were in spawn.
+            if (storedSpawnPosition)
+            {
+                MinWait();
+                Teleport(EventPlayer(), storedSpawnPosition);
+                storedSpawnPosition = null;
+                StopCamera(EventPlayer());
+            }
+            SetGravity(EventPlayer(), 100);
+            setting_health = false;
+        }
+        role = 0;
+    }
+    setup_done = true;
+}
+
+rule: "Anti Crash"
+{
+    if (ServerLoad() > 240)
+    {
+        server_stress_time += 1;
+    }
+    else
+    {
+        server_stress_time = 0;
+    }
+    if (server_stress_time == 6)
+    {
+        SmallMessage(AllPlayers(Team.All), "Anti Crash Slow Mode");
+        SetSlowMotion(10);
+    }
+    if (server_stress_time == 0)
+    {
+        SetSlowMotion(100);
+    }
+    Wait(0.5, WaitBehavior.IgnoreCondition);
+    Loop();
+}
+
+rule: "Remove Effects On Death"
+Event.OnDeath
+{
+    DestroyEffect(brig_ult_ref);
+    brig_ult = 0;
+}
+
+rule: "Increased Knockback"
+Event.OngoingPlayer
+if (booped == 1)
+if (role == 1)
+{
+    Wait(0.05, WaitBehavior.IgnoreCondition);
+    ApplyImpulse(EventPlayer(), DirectionTowards(PositionOf(EventPlayer()), PositionOf(EventPlayer()) + VelocityOf(EventPlayer()) * Vector(1, [], 1)), SpeedOf(EventPlayer()) * 0.3, Relative.ToWorld, ContraryMotion.Incorporate);
+    booped = 0;
+}
+
+rule: "Ana: Heal Nade Extra Healing"
+Event.OnHealingDealt
+Player.Ana
+if (EventAbility() == Button.Ability2)
+{
+    Heal(Healee(), Healer(), 26.667);
+}
+
+rule: "Ana Sleep Dart Duration"
+Event.OnDamageDealt
+Player.Ana
+if (EventAbility() == Button.Ability1)
+{
+    Wait(2, WaitBehavior.IgnoreCondition);
+    if (HasStatus(Victim(), Status.Asleep))
+    {
+        ClearStatus(Victim(), Status.Asleep);
+        SetStatus(Victim(), Attacker(), Status.Asleep, 100);
+        Wait(4, WaitBehavior.IgnoreCondition);
+        ClearStatus(Victim(), Status.Asleep);
+    }
+}
+
+rule: "Ana Remove Nano Heal"
+Event.OnHealingDealt
+Player.Ana
+if (EventAbility() == Button.Ultimate)
+{
+    Damage(Healee(), null, EventHealing() * 2);
+    Healee().has_nano = true;
+    Wait(8, WaitBehavior.IgnoreCondition);
+    Healee().has_nano = false;
+}
+
+rule: "Brig: Manual Ult Activation"
+Event.OngoingPlayer
+Player.Brigitte
+if (IsButtonHeld(EventPlayer(), Button.Ultimate) == true)
+if (UltimateChargePercent(EventPlayer()) >= 99)
+{
+    BigMessage(AllPlayers(OppositeTeamOf(TeamOf(EventPlayer()))), "RAID BOSS INCOMING");
+    BigMessage(AllPlayers(TeamOf(EventPlayer())), "RALLY TO ME");
+    PlayEffect(AllPlayers(Team.All), PlayEffect.BuffExplosionSound, Color.White, EventPlayer(), 100);
+    SetMoveSpeed(EventPlayer(), 113.043);
+    ult_charge = 0;
+    brig_ult = true;
+    CreateEffect(AllPlayers(Team.All), Effect.Ring, Color.Yellow, PositionOf(EventPlayer()), 8.5, EffectRev.VisibleToPositionAndRadius);
+    brig_ult_ref = LastCreatedEntity();
+    Wait(10, WaitBehavior.IgnoreCondition);
+    brig_ult = false;
+    DestroyEffect(brig_ult_ref);
+    SetMoveSpeed(EventPlayer(), 100);
+}
+
+rule: "Brig: Ult Armor Gen"
+Event.OngoingPlayer
+Player.Brigitte
+if (brig_ult == true)
+{
+    ult_charge = 0;
+    players_in_range = PlayersWithinRadius(PositionOf(EventPlayer()), 10, TeamOf(EventPlayer()), RadiusLOS.SurfacesAndEnemyBarriers);
+    i = 0;
+    while (i < 6)
+    {
+        players_in_range[i].brig_ult_armor_amount += 15;
+        if (players_in_range[i].brig_ult_armor_amount > 150)
+        {
+            players_in_range[i].brig_ult_armor_amount = 150;
+        }
+        RemoveHealthPoolFromPlayer(players_in_range[i].brig_ult_armor_ref);
+        AddHealthPoolToPlayer(players_in_range[i], HealthType.Armor, players_in_range[i].brig_ult_armor_amount, false, true);
+        players_in_range[i].brig_ult_armor_ref = LastCreatedHealthPool();
+        i += 1;
+    }
+    Wait(0.5, WaitBehavior.IgnoreCondition);
+    LoopIfConditionIsTrue();
+}
+
+rule: "Brig: Damage Teammates during Repair Pack Throw"
+Event.OngoingPlayer
+Player.Brigitte
+if (IsUsingAbility2(EventPlayer()) == true)
+{
+    Damage(PlayersInViewAngle(EventPlayer(), TeamOf(EventPlayer()), 45), null, 0.01);
+    MinWait();
+    LoopIfConditionIsTrue();
+}
+
+rule: "Brig: Repair Pack Default"
+Event.OnHealingDealt
+Player.Brigitte
+if (EventAbility() == Button.Ability2)
+if (HeroOf(Healee()) != Hero.Lucio)
+{
+    temp_health = MaxHealth(Healee()) - Health(Healee());
+    heal_amount = 150;
+    heal_amount -= temp_health;
+    if (temp_health > 150)
+    {
+        Heal(Healee(), Healer(), 150);
+    }
+    else
+    {
+        Heal(Healee(), Healer(), temp_health);
+    }
+    if (heal_amount > 75)
+    {
+        heal_amount = 75;
+    }
+    if (heal_amount < 1)
+    {
+        heal_amount = 0;
+    }
+    AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount, false, true);
+    Healee().armor_pack_ref = LastCreatedHealthPool();
+    SetAbility2Enabled(EventPlayer(), false);
+    Wait(6, WaitBehavior.IgnoreCondition);
+    SetAbility2Enabled(EventPlayer(), true);
+}
+
+rule: "Brig: Repair Pack Lucio"
+Event.OnHealingDealt
+Player.Brigitte
+if (EventAbility() == Button.Ability2)
+if (HeroOf(Healee()) == Hero.Lucio)
+{
+    temp_health_0 = MaxHealth(Healee()) - Health(Healee());
+    heal_amount_0 = 150;
+    heal_amount_0 -= temp_health_0;
+    if (temp_health_0 > 150)
+    {
+        Heal(Healee(), Healer(), 234);
+    }
+    else
+    {
+        Heal(Healee(), Healer(), temp_health_0 / 0.8);
+    }
+    if (heal_amount_0 > 75)
+    {
+        heal_amount_0 = 75;
+    }
+    AddHealthPoolToPlayer(Healee(), HealthType.Armor, heal_amount_0, false, true);
+    Healee().armor_pack_ref = LastCreatedHealthPool();
+    SetAbility2Enabled(EventPlayer(), false);
+    Wait(6, WaitBehavior.IgnoreCondition);
+    SetAbility2Enabled(EventPlayer(), true);
+}
+
+rule: "Brig: Remove Repair Pack Health"
+Event.OngoingPlayer
+if (armor_pack_ref != null)
+{
+    Wait(6, WaitBehavior.IgnoreCondition);
+    RemoveHealthPoolFromPlayer(armor_pack_ref);
+    armor_pack_ref = null;
+}
+
+rule: "Brig: Ult Charge"
+Event.OngoingPlayer
+Player.Brigitte
+if (IsUsingUltimate(EventPlayer()) == false)
+if (IsGameInProgress() == true)
+if (!IsBetweenRounds() == true)
+{
+    if (ult_charge >= ult_charge_max)
+    {
+        ult_charge = ult_charge_max;
+    }
+    ult_charge += 0.667;
+    ult_charge += 100;
+    Wait(0.2, WaitBehavior.IgnoreCondition);
+    SetUltimateCharge(EventPlayer(), Min(99, ult_charge / ult_charge_max * 100));
+    Loop();
+}
+
+rule: "Brig: Used Shield Bash"
+Event.OngoingPlayer
+Player.Brigitte
+if (IsFiringSecondary(EventPlayer()) == true)
+if (IsFiringPrimary(EventPlayer()) == true)
+{
+    SetMoveSpeed(EventPlayer(), 50);
+    Wait(0.25, WaitBehavior.IgnoreCondition);
+    SetMoveSpeed(EventPlayer(), 100);
+}
+
+rule: "Brig: Shield Bash Stun"
+Event.OnDamageDealt
+Player.Brigitte
+if (IsFiringSecondary(EventPlayer()) == true)
+if (EventAbility() == Button.PrimaryFire)
+{
+    if (Victim().has_nano == true)
+    {
+        if (HealthOfType(Victim(), HealthType.Armor) > 1)
+        {
+            if (EventDamage() > 18)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+        else
+        {
+            if (EventDamage() > 25)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+    }
+    else
+    {
+        if (HealthOfType(Victim(), HealthType.Armor) > 1)
+        {
+            if (EventDamage() > 30)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+        else
+        {
+            if (EventDamage() > 35)
+            {
+                SetStatus(Victim(), Attacker(), Status.Stunned, 0.9);
+                SetAbilityCooldown(Attacker(),Button.PrimaryFire,5);
+                Wait(5);
+            }
+        }
+    }
+}
+
+rule: "Brig: Reduce Armor From Damage"
+Event.OnDamageTaken
+if (brig_ult_armor_amount > 0)
+{
+    temp_damage = EventDamage();
+    temp_damage -= HealthOfType(EventPlayer(), HealthType.Shields);
+    brig_ult_armor_amount -= temp_damage;
+    if (brig_ult_armor_amount < 0)
+    {
+        brig_ult_armor_amount = 0;
+    }
+}
+
+rule: "Brig: Create Inspire Healing"
+Event.OnDamageDealt
+Player.Brigitte
+{
+    StopAllHealOverTime(PlayersWithinRadius(PositionOf(Attacker()), 10, TeamOf(Attacker()), RadiusLOS.SurfacesAndEnemyBarriers));
+    StartHealOverTime(PlayersWithinRadius(PositionOf(Attacker()), 10, TeamOf(Attacker()), RadiusLOS.SurfacesAndEnemyBarriers), Attacker(), 5, 16);
+    Wait(1.5, WaitBehavior.IgnoreCondition);
+}
+
+rule: "Brig: Raise Self Healing"
+Event.OnHealingTaken
+Player.Brigitte
+if (Healer() == Healee())
+if (EventAbility() != null)
+{
+    Heal(Healee(), Healer(), EventHealing() * 100);
+}
+
+rule: "Reset on Round End"
+Event.OngoingPlayer
+if (IsBetweenRounds() == true)
+{
+    ult_charge = 0;
+}
+
+rule: "Dva: Increased Dva booster boop range"
+Event.OnDamageDealt
+Player.Dva
+if (EventAbility() == Button.Ability1)
+{
+    Victim().booped = 1;
+}
+
+rule: "Dva: Boosters Damage"
+Event.OnDamageDealt
+Player.Dva
+if (EventAbility() == Button.Ability1)
+{
+    Heal(Victim(), null, 5);
+}
+
+rule: "Dva: Reduce Remech Damage"
+Event.OngoingPlayer
+Player.Dva
+if (IsUsingUltimate(EventPlayer()) == true)
+if (IsInAlternateForm(EventPlayer()) == true)
+{
+    RemoveHealthPoolFromPlayer(base_health_ref);
+    SetDamageDealt(EventPlayer(), 20);
+    Wait(1, WaitBehavior.IgnoreCondition);
+    SetDamageDealt(EventPlayer(), 100);
+}
+
+rule: "Dva: Baby Health"
+Event.OngoingPlayer
+Player.Dva
+if (IsInAlternateForm(EventPlayer()) == true)
+{
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    brig_ult_armor_amount = 0;
+    AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 51, true, true);
+}
+
+rule: "Dva: Mech Health"
+Event.OngoingPlayer
+Player.Dva
+if (!IsInAlternateForm(EventPlayer()) == true)
+{
+    RemoveAllHealthPoolsFromPlayer(EventPlayer());
+    Wait(0.033, WaitBehavior.IgnoreCondition);
+    SetMaxHealth(EventPlayer(), 66);
+    Wait(0.033, WaitBehavior.IgnoreCondition);
+    Heal(EventPlayer(), null, 1000);
+    temp_health_1 = 400 - MaxHealthOfType(EventPlayer(), HealthType.Health);
+    AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, temp_health_1, true, true);
+    if (MaxHealthOfType(EventPlayer(), HealthType.Armor) < 200)
+    {
+        temp_armor = 200 - MaxHealthOfType(EventPlayer(), HealthType.Armor);
+        AddHealthPoolToPlayer(EventPlayer(), HealthType.Armor, temp_armor, true, true);
+    }
+}
+
+rule: "Dva: Melee Cancels Boosters"
+Event.OngoingPlayer
+Player.Dva
+if (IsUsingAbility1(EventPlayer()) == true)
+if (IsButtonHeld(EventPlayer(), Button.Melee) == true)
+{
+    PressButton(EventPlayer(), Button.Ability1);
+}
+
+rule: "Lucio: Increased Boop Range"
+Event.OnDamageDealt
+Player.Lucio
+if (EventAbility() == Button.SecondaryFire)
+{
+    Victim().booped = 1;
+}
+
+rule: "Lucio: Increase Healing From Others"
+Event.OnHealingTaken
+Player.Lucio
+if (Healer() != EventPlayer())
+if (EventAbility() != null)
+{
+    Heal(Healer(), Healee(), EventHealing() * 0.25);
+}
+
+rule: "Moira: More Self Heal"
+Event.OnDamageDealt
+Player.Moira
+if (EventAbility() == Button.SecondaryFire)
+{
+    Heal(Attacker(), Attacker(), 1.1);
+    Wait(0.167, WaitBehavior.IgnoreCondition);
+}
+
+rule: "Moira: Resource"
+Event.OngoingPlayer
+Player.Moira
+{
+    if (IsFiringPrimary(EventPlayer()))
+    {
+        SetHealingDealt(EventPlayer(), 114.3);
+        moira_resource -= 3.4;
+    }
+    else
+    {
+        SetHealingDealt(EventPlayer(), 100);
+        moira_resource += 0.749;
+    }
+    if (moira_resource > 100)
+    {
+        moira_resource = 100;
+    }
+    SetAbilityResource(EventPlayer(), Button.PrimaryFire, moira_resource);
+    Wait(0.2, WaitBehavior.IgnoreCondition);
+    Loop();
+}
+
+rule: "Moira: Gain Resource From Damage"
+Event.OnDamageDealt
+Player.Moira
+if (EventAbility() == Button.SecondaryFire)
+{
+    moira_resource += 1;
+}
+
+rule: "Moira: Cant Fade while ulting"
+Event.OngoingPlayer
+Player.Moira
+if (IsUsingUltimate(EventPlayer()) == true)
+{
+    SetAbility1Enabled(EventPlayer(), false);
+    WaitUntil(IsUsingUltimate(EventPlayer()) == false, 8);
+    SetAbility1Enabled(EventPlayer(), true);
+}
+
+rule: "Moira: Cant super jump in Fade"
+Event.OngoingPlayer
+Player.Moira
+if (IsUsingAbility1(EventPlayer()) == true)
+{
+    SetJumpVerticalSpeed(EventPlayer(), 50);
+    WaitUntil(IsUsingAbility1(EventPlayer()) == false, 10);
+    SetJumpVerticalSpeed(EventPlayer(), 100);
+}
+
+rule: "Rein: FireStrike Cooldown and Damage"
+Event.OngoingPlayer
+Player.Reinhardt
+if (IsUsingAbility2(EventPlayer()) == true)
+{
+    SetDamageDealt(EventPlayer(), 100);
+    SetAbilityCharge(EventPlayer(), Button.Ability2, 0);
+    SetAbilityCooldown(EventPlayer(), Button.Ability2, 7);
+}
+
+rule: "Rein: Movement Speed Penalty"
+Event.OngoingPlayer
+Player.Reinhardt
+if (IsFiringSecondary(EventPlayer()) == true)
+{
+    SetMoveSpeed(EventPlayer(), 75);
+    WaitUntil(IsFiringSecondary(EventPlayer()) == false, 100);
+    SetMoveSpeed(EventPlayer(), 100);
+}
+
+rule: "Rein: Hammer Damage"
+Event.OngoingPlayer
+Player.Reinhardt
+if (IsFiringPrimary(EventPlayer()) == true)
+{
+    SetDamageDealt(EventPlayer(), 88.235);
+}
+
+rule: "Rein: Pin Cooldown and Damage"
+Event.OngoingPlayer
+Player.Reinhardt
+if (IsUsingAbility1(EventPlayer()) == true)
+{
+    SetDamageDealt(EventPlayer(), 133.333);
+    WaitUntil(IsUsingAbility1(EventPlayer()) == false, 100);
+    SetAbilityCooldown(EventPlayer(), Button.Ability1, 10);
+}
+
+rule: "Rein: Ult Damage"
+Event.OngoingPlayer
+Player.Reinhardt
+if (IsUsingUltimate(EventPlayer()) == true)
+if (IsOnGround(EventPlayer()) == true)
+{
+    SetDamageDealt(EventPlayer(), 20);
+    Wait(3, WaitBehavior.IgnoreCondition);
+}
+
+rule: "Rein: Raise Outer Ult Damage"
+Event.OnDamageDealt
+Player.Reinhardt
+if (EventAbility() == Button.Ultimate)
+{
+    if (EventDamage() < 50)
+    {
+        Damage(Victim(), Attacker(), 50 - EventDamage());
+    }
+    Wait(2.75, WaitBehavior.IgnoreCondition);
+    SetStatus(Victim(), Attacker(), Status.KnockedDown, 0.25);
+}
+
+rule: "Winston: Primal Range boop range"
+Event.OnDamageTaken
+if (HeroOf(Attacker()) == Hero.Winston)
+if (IsUsingUltimate(Attacker()) == true)
+{
+    Wait(0.05, WaitBehavior.IgnoreCondition);
+    if (Victim().role == 0)
+    {
+        ApplyImpulse(Victim(), DirectionTowards(PositionOf(Victim()), PositionOf(Victim()) + VelocityOf(Victim())), SpeedOf(Victim()) * 0.5, Relative.ToWorld, ContraryMotion.Incorporate);
+    }
+}
+
+rule: "Winston: Primal Rage Health Change"
+Event.OngoingPlayer
+Player.Winston
+if (IsUsingUltimate(EventPlayer()) == true)
+{
+    RemoveHealthPoolFromPlayer(base_health_ref);
+    AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 1015.38, true, true);
+    base_health_ref = LastCreatedHealthPool();
+    Wait(0.017, WaitBehavior.IgnoreCondition);
+    Heal(EventPlayer(), null, 2000);
+    Wait(10, WaitBehavior.IgnoreCondition);
+    RemoveHealthPoolFromPlayer(base_health_ref);
+    AddHealthPoolToPlayer(EventPlayer(), HealthType.Health, 476.92, true, true);
+    base_health_ref = LastCreatedHealthPool();
+}
+
+rule: "Zarya: Personal Bubble"
+Event.OngoingPlayer
+Player.Zarya
+if (IsUsingAbility1(EventPlayer()) == true)
+{
+    Wait(0.033, WaitBehavior.IgnoreCondition);
+    SetAbility1Enabled(EventPlayer(), false);
+    Wait(10, WaitBehavior.IgnoreCondition);
+    zarya_shield_cooldown_1 = 10;
+    while (zarya_shield_cooldown_1 > 0)
+    {
+        Wait(1, WaitBehavior.IgnoreCondition);
+        zarya_shield_cooldown_1 -= 1;
+    }
+    SetAbility1Enabled(EventPlayer(), true);
+}
+
+rule: "Zarya: Other Bubble"
+Event.OngoingPlayer
+Player.Zarya
+if (IsUsingAbility2(EventPlayer()) == true)
+{
+    Wait(0.033, WaitBehavior.IgnoreCondition);
+    SetAbility2Enabled(EventPlayer(), false);
+    zarya_shield_cooldown_2 = 8;
+    while (zarya_shield_cooldown_2 > 0)
+    {
+        Wait(1, WaitBehavior.IgnoreCondition);
+        zarya_shield_cooldown_2 -= 1;
+    }
+    SetAbility2Enabled(EventPlayer(), true);
+}
+
+rule: "Zen: Raise Damage from non kick attack"
+Event.OnDamageDealt
+Player.Zenyatta
+if (EventAbility() == Button.Melee)
+{
+    Heal(Victim(), null, 15);
+}
+
+rule: "Zen: Decreased Boop Range"
+Event.OnDamageTaken
+if (HeroOf(Attacker()) == Hero.Zenyatta)
+if (EventAbility() == Button.Melee)
+{
+    Wait(0.05, WaitBehavior.IgnoreCondition);
+    ApplyImpulse(Victim(), DirectionTowards(PositionOf(Victim()), PositionOf(Victim()) + VelocityOf(Victim())) * Vector(-1, [], -1), SpeedOf(Victim()) * 0.9, Relative.ToWorld, ContraryMotion.Incorporate);
+}
+
+rule: "Shield Health Regen"
+Event.OngoingPlayer
+Player.Zenyatta
+if (current_shield_health < max_shield_health)
+{
+    time_since_damage_shield += 0.5;
+    if (time_since_damage_shield >= 3)
+    {
+        Heal(EventPlayer(), null, Min(3.333, max_shield_health - current_shield_health));
+        current_shield_health += Min(3.333, max_shield_health - current_shield_health);
+        if (current_shield_health > max_shield_health)
+        {
+            current_shield_health = max_shield_health;
+        }
+        time_since_damage_shield = 2.5;
+    }
+    Wait(0.5, WaitBehavior.IgnoreCondition);
+    LoopIfConditionIsTrue();
+}
+
+rule: "Shield Timer Reset"
+Event.OnDamageTaken
+Player.Zenyatta
+if (Attacker() != null)
+{
+    time_since_damage_shield = 0;
+    current_shield_health = HealthOfType(EventPlayer(), HealthType.Shields);
+}
